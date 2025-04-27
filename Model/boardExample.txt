@@ -1,0 +1,60 @@
+empty board:
+
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+
+
+default board black is on top.
+The first letter is the team, second is the class:
+
+bR bN bB bQ bK bB bN bR
+bP bP bP bP bP bP bP bP
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+- - - - - - - -
+wP wP wP wP wP wP wP wP
+wR wN wB wQ wK wB wN wR
+
+
+
+fool's mate:
+
+	bR bN bB bQ bK bB bN bR
+	bP bP bP bP bP bP bP bP
+	- - - - - - - -
+	- - - - - - - -
+	- - - - - - - -
+	- - - - - wP - -
+	wP wP wP wP wP - wP wP
+	wR wN wB wQ wK wB - wR
+
+
+
+Active pieces:
+
+	bR - - - bK - - bR
+	- bP bB - - - bP bP
+	- - - bP - - - -
+	- - - - - bN - -
+	- - wP - wN - - -
+	wP - - - - - - -
+	- wP - wP - wP wP wP
+	wR - - - wK - wN wR
+
+Castling:
+
+	bR - - - bK - bB bR
+	bP bP bP - - bP bP bP
+	- - - - - - - -
+	- - - - - - - -
+	- - - - wP - - -
+	- - - - - - - -
+	wP wP wP wP - wP wP wP
+	wR wN wB - wK - wN wR
