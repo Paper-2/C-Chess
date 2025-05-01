@@ -1,9 +1,0 @@
-Date started: 4/27/2025
-last updated: 4/27/2025
-
-Day 0 -- 2025-04-27
-    - 12:39:53 The logging system was created.
-	- 13:13:34 testing the logging system from the terminal
-	- 13:15:14 a bit rudimentary, but it works. This should see some updates in the futures, but now I will start with the actual coding project
-	- 13:17:10 I should add a system to count how many hours was spent on a single project
-	- 13:18:42 And another system to log commits to the main branch

@@ -1,0 +1,16 @@
+
+# Chess Piece Bitmasking
+byte 0 represents the piece type. 
+
+	White		0
+	Black		1
+
+# Chess Piece Types
+byte 1 to byte 3 represents the piece type.
+
+	king		0
+	queen		1
+	rook		2
+	bishop		3
+	knight		4
+	pawn		5
