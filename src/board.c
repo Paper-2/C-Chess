@@ -93,7 +93,68 @@ void setBoard(Board * board, Piece boardData[8][8])
 
 int isvalidMove(Board *, Piece *, int[2], int[2])
 {
+
+    // general case for all pieces
+    // check if the destination is within the bounds of the board
+    if (dest[0] < 0 || dest[0] > 7 || dest[1] < 0 || dest[1] > 7) // this part is not necessary, but depending on how the controller is implemented, it might be useful to check.
+    {
+        return 0; // invalid move
+    }
+    
+
+    printf("src piece %s, dest piece %s\n", pieceToString(*piece), pieceToString(board->grid[dest[0]][dest[1]]));
+
+    if (getColor(piece) == getColor(&board->grid[dest[0]][dest[1]]))
+    {
+        return 0; // invalid move, the piece is of the same color as the destination piece
+    }
+
+
+    switch (*piece >> 1) // check the piece type
+    {
+    case 0b0001: // King
+        return isvalidMoveKing(board, piece, dest);
+    case 0b0010: // Queen
+        return isvalidMoveQueen(board, piece, dest);
+    case 0b0011: // Rook
+        return isvalidMoveRook(board, piece, dest);
+    case 0b0100: // Bishop
+        return isvalidMoveBishop(board, piece, dest);
+    case 0b0101: // Knight
+        return isvalidMoveKnight(board, piece, dest);
+    case 0b0110: // Pawn
+        return isvalidMovePawn(board, piece, dest);
+    
+    case 0b1111111: // Empty cell
+        printf("cannot move an empty square type\n");
+        return 0; // invalid piece type
+    }
     return 0;
+}
+
+int isvalidMoveKing(Board *, Piece *,int[2], int[2])
+{
+    return 1;
+}
+int isvalidMoveQueen(Board *, Piece *,int[2], int[2])
+{
+    return 1;
+}
+int isvalidMoveRook(Board *, Piece *,int[2], int[2])
+{
+    return 1;
+}
+int isvalidMoveBishop(Board *, Piece *,int[2], int[2])
+{
+    return 1;
+}
+int isvalidMoveKnight(Board *, Piece *,int[2], int[2])
+{
+    return 1;
+}
+int isvalidMovePawn(Board *, Piece *,int[2], int[2])
+{
+    return 1;
 }
 
 int isSpaceFree(Board *board, int pos[2])
