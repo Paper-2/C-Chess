@@ -18,7 +18,7 @@ void setClass(Piece *, uint8_t);        // sets the class
 
 void killPiece(Piece *); // kills a piece by deleting it and deallocating the memory
 
-int getColor(Piece *); // gets the color of a piece
-int getClass(Piece *); // gets the type of a piece
+uint8_t getColor(Piece *); // gets the color of a piece
+uint8_t getClass(Piece *); // gets the type of a piece
 
 #endif // !Piece

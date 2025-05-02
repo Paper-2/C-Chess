@@ -42,12 +42,12 @@ inline void killPiece(Piece *bitmask)
 	free(bitmask);
 }
 
-inline int getColor(Piece *bitmask)
+inline uint8_t getColor(Piece *bitmask)
 {
 	// gets the color of a piece
 	return *bitmask & 0b0001;
 }
-inline int getClass(Piece *bitmask)
+inline uint8_t getClass(Piece *bitmask)
 {
 	// gets the type of a piece
 	return *bitmask & 0b1110;
