@@ -29,8 +29,6 @@ def updateLog(LogMessage, logFile='Log',):
     daysSinceCreated = (datetime.datetime.now() - dateCreated).days
     daysSinceLastUpdate = (datetime.datetime.now() - lastUpdate).days
 
-
-    print("Last updated: " + str(lastUpdate_str))
     logData = logData.replace(
         "Last updated: " + str(lastUpdate_str),
         "Last updated: " + datetime.datetime.now().strftime("%m/%d/%Y"),
@@ -75,6 +73,13 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1:
         print("Usage: python updateLog.py <logMessage>")
+        if input("Do you want to start a loop? (y/n): ").lower() == 'y':
+            while True:
+                logMessage = input("Enter log message: ")
+                updateLog(logMessage)
+        else:
+            print("Exiting...")
+        # sys.exit(1)
         sys.exit(1)
 
     logMessage = str(sys.argv[1])
