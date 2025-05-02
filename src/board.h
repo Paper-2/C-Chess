@@ -1,8 +1,21 @@
 #ifndef BOARD_H
 #define BOARD_H
-typedef struct Board {
-	char **grid; // 2D array of chars. grid is a pointer to a pointer. See boardExample for how the grid looks like.
 
-};
+#include "piece.h"
+typedef struct Board
+{
+	Piece **grid; // 2D array of chars. grid is a pointer to a pointer. See boardExample for how the grid looks like.
+} Board;
+
+Board *makeEmptyBoard(); 							// creates an empty board and returns a pointer to it
+Board *defaultBoard();	 							// returns a default board with pieces in starting positions. returns a pointer to it
+
+void freeBoard(Board *);
+void printBoard(Board *);
+void movePiece(Board *, Piece *, int[2]); 			// moves a piece from one position to another. sets the destination cell to the piece and the source cell to an empty cell.
+void setBoard(Board *, Piece[8][8]);		  		// sets the board based on the fen string
+
+int isvalidMove(Board *, Piece *, int[2], int[2]); 	// checks if the move is valid (for all pieces types)
+int isSpaceFree(Board *, int[2]);					// checks if the space is empty
 
 #endif // !BOARD_H
