@@ -53,14 +53,14 @@ inline int getClass(Piece *bitmask)
 	return *bitmask & 0b1110;
 }
 
-int main()
-{
-	Piece *piece = malloc(sizeof(Piece));
-	setPieceBitMask(piece, 0b0000);
-	setColor(piece, 1);
-	setClass(piece, 2);
-	printPiece(piece);
-	getColor(piece);
-	killPiece(piece);
-	return 0;
-}
+// int main()
+// {
+// 	Piece *piece = malloc(sizeof(Piece));
+// 	setPieceBitMask(piece, 0b0000);
+// 	setColor(piece, 1);
+// 	setClass(piece, 2);
+// 	printPiece(piece);
+// 	getColor(piece);
+// 	killPiece(piece);
+// 	return 0;
+// }
