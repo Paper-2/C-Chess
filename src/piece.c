@@ -50,7 +50,7 @@ inline uint8_t getColor(Piece *bitmask)
 inline uint8_t getClass(Piece *bitmask)
 {
 	// gets the type of a piece
-	return *bitmask & 0b1110;
+	return *bitmask >> 1;
 }
 
 // int main()
