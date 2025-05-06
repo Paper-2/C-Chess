@@ -1,5 +1,5 @@
 Date started: 4/27/2025
-Last updated: 05/02/2025
+Last updated: 05/06/2025
 
 Day 0 -- 2025-04-27
     - 12:39:53 The logging system was created.
@@ -20,7 +20,8 @@ Day 2 -- 2025-04-29 04:17:24.153780
 Day 3 -- 2025-04-30
 	- 04:17:24 I will try to fix Visual studio before I continue doing work on the project
 	- 04:31:16 it's fixed now
-	- 04:31:46 The problem was that I missed #ifndef FILENAME_H ... part
+	- 04:31:46 The problem was that I missed #ifndef FILENAME_H ... part (Amend: This is called a header guard
+				they work by preventing the header file being defined multiple times in the same object file)
 	- 04:31:56 silly, I know
 	- 04:32:35 we love boiler plate don't we folks?	
 	- 04:35:26 I'll go to sleep now, but this is kind of huge. I will work more on this
@@ -41,3 +42,18 @@ Day 5 -- 2025-05-02
 	- 00:33:41 I want to fix my sleep schedule so I will not work on the project tonight
 	- 15:50:05 tried to implementing chess emojis but failed
 	- 15:50:14 I'll try again at some point
+	- 16:00:10 The board can now be printed
+	- 16:00:19 moving a piece also works
+	- 18:20:52 #TODO make a to do list :)
+	- 18:21:14 #TODO: this is a todo test
+	- 20:15:51 king movement is done!! for black and white
+	- 23:07:47 I need to start working on the game rendering
+	- 23:08:04 I hate this, I don't get anything lol
+	- 23:08:23 just look view.c man
+
+
+Days 6 to 8 -- 2025-05-05 01:41:36.607151
+	- 01:41:36 Nothing was logged.
+
+Day 9 -- 2025-05-06
+	- 01:41:36 I need to learn how to handle mouse input
