@@ -7,7 +7,7 @@ char *pieceToString(Piece piece)
 {
     char *string = malloc(3 * sizeof(char));
     string[2] = '\0';
-    
+
     /*
     White		0
     Black		1
@@ -18,56 +18,57 @@ char *pieceToString(Piece piece)
         string[1] = '-'; // Empty cell
         return string;
     }
-    
+
     switch (piece & 0b1)
     {
-        case 0:
-            string[0] = 'w';
-            break;
-        case 1:
-            string[0] = 'b';
-            break;
+    case 0:
+        string[0] = 'w';
+        break;
+    case 1:
+        string[0] = 'b';
+        break;
     }
-    /*	
+    /*
     king		0
-	queen		1
-	rook		2
-	bishop		3
-	knight		4
-	pawn		5 
+    queen		1
+    rook		2
+    bishop		3
+    knight		4
+    pawn		5
     */
-
 
     switch (piece >> 1)
     {
-        case 0:
-            string[1] = 'K';
-            break;
-        case 1:
-            string[1] = 'Q';
-            break;
-        case 2:
-            string[1] = 'R';
-            break;
-        case 3:
-            string[1] = 'B';
-            break;
-        case 4:
-            string[1] = 'N';
-            break;
-        case 5:
-            string[1] = 'P';
-            break;
+    case 0:
+        string[1] = 'K';
+        break;
+    case 1:
+        string[1] = 'Q';
+        break;
+    case 2:
+        string[1] = 'R';
+        break;
+    case 3:
+        string[1] = 'B';
+        break;
+    case 4:
+        string[1] = 'N';
+        break;
+    case 5:
+        string[1] = 'P';
+        break;
     }
     return string;
 }
 
-// int main()
+// Piece fenToPieceArr(char string[])
 // {
-//     Piece piece = 0b00000000;
-
-//     char *result = pieceToString(piece);
-//     printf("%s\n", result);
-
-//     return 0;
+//     for (int i = 0; i < 64; i++)
+//     {
+//         if (string[i] = ' ')
+//         {
+//             string[i] = '\0';
+//             break;
+//         }
+//     }
 // }
