@@ -7,17 +7,27 @@
 #include "piece.h"
 
 Piece initialBoardData[8][8] = {
-        {    0b0101,     0b1001,     0b0111,     0b0011,     0b0001,     0b0111,     0b1001,     0b0101},
-        {    0b1011,     0b1011,     0b1011,     0b1011,     0b1011,     0b1011,     0b1011,     0b1011},
-        {0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111},
-        {0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111},
-        {0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111},
-        {0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111},
-        {    0b1010,     0b1010,     0b1010,     0b1010,     0b1010,     0b1010,     0b1010,     0b1010},
-        {    0b0100,     0b1000,     0b0110,     0b0010,     0b0000,     0b0110,     0b1000,     0b1010}
-};
+    {0b0101, 0b1001, 0b0111, 0b0011, 0b0001, 0b0111, 0b1001, 0b0101},
+    {0b1011, 0b1011, 0b1011, 0b1011, 0b1011, 0b1011, 0b1011, 0b1011},
+    {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
+    {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
+    {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
+    {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
+    {0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010},
+    {0b0100, 0b1000, 0b0110, 0b0010, 0b0000, 0b0110, 0b1000, 0b1010}};
 
+int turn;
+int enPassant;
+int wCastle;
+int bCastle;
 
+// Private function prototypes
+int isValidMoveKing(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a king
+int isValidMoveQueen(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a queen
+int isValidMoveRook(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a rook
+int isValidMoveBishop(Board *, Piece *, int[2], int[2]); // checks if the move is valid for a bishop
+int isValidMoveKnight(Board *, Piece *, int[2], int[2]); // checks if the move is valid for a knight
+int isValidMovePawn(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a pawn
 
 Board *makeEmptyBoard()
 {
@@ -30,7 +40,7 @@ Board *makeEmptyBoard()
 
         for (int col = 0; col < 8; col++)
         {
-            board->grid[row][col] = 0b11111111; // set each cell to 0b11111111, which doesn't represent any piece.
+            board->grid[row][col] = EMPTY_CELL; // set each cell to 0b11111111, which doesn't represent any piece.
         }
     }
 
@@ -76,7 +86,7 @@ void movePiece(Board *board, Piece *piece, int dest[2])
 {
     // moves a piece from one position to another
     board->grid[dest[0]][dest[1]] = *piece; // set the destination cell to the piece
-    *piece = 0b11111111;                    // set the source cell to an empty cell
+    *piece = EMPTY_CELL;                    // set the source cell to an empty cell
     piece = &board->grid[dest[0]][dest[1]]; // set the piece to the destination cell
 }
 
@@ -91,7 +101,7 @@ void setBoard(Board *board, Piece boardData[8][8])
     }
 }
 
-int isvalidMove(Board *board, Piece *piece, int src[2], int dest[2])
+int isValidMove(Board *board, Piece *piece, int src[2], int dest[2])
 {
 
     // general case for all pieces
@@ -151,20 +161,38 @@ int isValidMoveRook(Board *, Piece *, int src[2], int dest[2])
 }
 int isValidMoveBishop(Board *, Piece *, int src[2], int dest[2])
 {
-    float slope = (float)(dest[1] - src[1]) / (float)(dest[0] - src[0]); // calculate the slope of the line between the two points
+    /* int slope = (float)(dest[1] - src[1]) / (float)(dest[0] - src[0]); // calculate the slope of the line between the two points
 
     return abs(slope) == 1; // check if the move is valid for a bishop
+    
+    */
+
+    // Calculate the absolute differences in rows and columns
+    int rowDiff = abs(dest[0] - src[0]);
+    int colDiff = abs(dest[1] - src[1]);
+
+    // A bishop moves diagonally if the row and column differences are equal
+    return rowDiff == colDiff;
+
 }
 int isValidMoveKnight(Board *, Piece *, int src[2], int dest[2])
 {
-    float slope = (float)(dest[1] - src[1]) / (float)(dest[0] - src[0]);        // calculate the slope of the line between the two points
-    float distance = sqrt(pow(src[0] - dest[0], 2) + pow(src[1] - dest[1], 2)); // calculate the distance between the two points
+   /* float slope = (float)(dest[1] - src[1]) / (float)(dest[0] - src[0]);        // calculate the slope of the line between the two points
+    float distance = sqrt(pow(src[0] - dest[0], 2) + pow(src[1] - dest[1], 2));  // calculate the distance between the two points
 
-    return (((int)distance == 3 && abs(slope) == 3) || (abs(slope) == 1 / 3 && (int)distance == 3));
+    return (((int)distance == 3 && abs(slope) == 3) || (abs(slope) == 1 / 3 && (int)distance == 3));*/
+    
+    // Calculate the absolute differences in rows and columns
+    int rowDiff = abs(dest[0] - src[0]);
+    int colDiff = abs(dest[1] - src[1]);
+
+    // A knight moves in an "L" shape: 2 squares in one direction and 1 in the other
+    return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+
 }
 int isValidMovePawn(Board *board, Piece *, int src[2], int dest[2])
 {
-    int isEmpty = isSpaceFree(board, dest); // check if the destination cell is empty
+    /*    int isEmpty = isSpaceFree(board, dest); // check if the destination cell is empty
 
     if (getColor(&board->grid[src[0]][src[1]]) == 1) // check if the pawn is black
     {
@@ -182,22 +210,38 @@ int isValidMovePawn(Board *board, Piece *, int src[2], int dest[2])
           !isEmpty))                             // check if the destination cell is empty
     {
         return 1; // invalid move, the pawn can only move forward or diagonally
+    }*/
+
+    int isEmpty = isSpaceFree(board, dest); // Check if the destination cell is empty
+    int color = getColor(&board->grid[src[0]][src[1]]); // Get the pawn's color (1 for black, 0 for white)
+
+    // Determine the direction of movement based on the pawn's color
+    int direction = (color == 1) ? -1 : 1;
+
+    // Calculate the row and column differences
+    int rowDiff = dest[0] - src[0];
+    int colDiff = abs(dest[1] - src[1]);
+
+    // Check for forward movement
+    if (colDiff == 0 && isEmpty)
+    {
+        // Pawns can move forward one square, or two squares if on their starting row
+        if (rowDiff == direction || (rowDiff == 2 * direction && src[0] == (color == 1 ? 6 : 1)))
+        {
+            return 1; 
+        }
     }
+
+    // Check for diagonal capture
+    if (colDiff == 1 && rowDiff == direction && !isEmpty)
+    {
+        return 1; 
+    }
+
+    return 0;
 }
 
 int isSpaceFree(Board *board, int pos[2])
 {
     return board->grid[pos[0]][pos[1]] == EMPTY_CELL; // check if the space is empty
-}
-
-int main()
-{
-    Board *board = makeEmptyBoard();
-    setBoard(board, initialBoardData); // set the board to the initial state
-    printBoard(board);
-    Piece testPiece = wKING;
-    printf("%d\n", isValidMoveQueen(board, &testPiece, (int[2]){0, 0}, (int[2]){0, 1})); // check if the move is valid for a king
-    freeBoard(board);
-
-    return 0;
 }

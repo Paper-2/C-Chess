@@ -30,13 +30,12 @@ void setBoard(Board *, Piece[8][8]);	  // sets the board based on the fen string
 
 int isValidMove(Board *, Piece *, int[2], int[2]); // checks if the move is valid (for all pieces types)
 
-int isValidMoveKing(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a king
-int isValidMoveQueen(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a queen
-int isValidMoveRook(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a rook
-int isValidMoveBishop(Board *, Piece *, int[2], int[2]); // checks if the move is valid for a bishop
-int isValidMoveKnight(Board *, Piece *, int[2], int[2]); // checks if the move is valid for a knight
-int isValidMovePawn(Board *, Piece *, int[2], int[2]);	 // checks if the move is valid for a pawn
 
 int isSpaceFree(Board *, int[2]); // checks if the space is empty
+
+extern int turn;
+extern int enPassant;
+extern int wCastle;
+extern int bCastle;
 
 #endif // !BOARD_H
