@@ -8,9 +8,9 @@ byte 0 represents the piece type.
 # Chess Piece Types
 byte 1 to byte 3 represents the piece type.
 
-	king		0
-	queen		1
-	rook		2
-	bishop		3
-	knight		4
-	pawn		5
+	king		0	0b000
+	queen		1	0b001
+	rook		2	0b010
+	bishop		3	0b011
+	knight		4	0b100
+	pawn		5	0b101
