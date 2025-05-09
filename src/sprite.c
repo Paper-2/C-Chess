@@ -75,21 +75,6 @@ The data bytes in the IDAT chunk contains the following:
 
 */
 
-typedef struct Sprite
-{
-    union
-    {
-        int width, w;
-    };
-    union
-    {
-        int height, h;
-    };
-    union
-    {
-        uint32_t *pixels, *p;
-    };
-} Sprite;
 
 FILE *filePtr;
 
