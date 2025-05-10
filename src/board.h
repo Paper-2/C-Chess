@@ -14,6 +14,16 @@
 #define bKNIGHT 0b1001
 #define bPAWN 0b1011
 
+
+//piece class
+
+#define KING 0b000   // king piece
+#define QUEEN 0b001  // queen piece
+#define ROOK 0b010   // rook piece
+#define BISHOP 0b011 // bishop piece
+#define KNIGHT 0b100 // knight piece
+#define PAWN 0b101   // pawn piece
+
 #include "piece.h"
 typedef struct Board
 {
@@ -22,6 +32,8 @@ typedef struct Board
 
 Board *makeEmptyBoard(); // creates an empty board and returns a pointer to it
 Board *defaultBoard();	 // returns a default board with pieces in starting positions. returns a pointer to it
+
+Piece *getPieceAt(Board *, int x, int y);
 
 void freeBoard(Board *);
 void printBoard(Board *);
