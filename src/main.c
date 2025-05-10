@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "board.h"
 #include "sprite.h"
+#include "utility.h"
 
 #define PRINT_ERROR(a, args...) printf("ERROR %s() %s Line %d: " a, __FUNCTION__, __FILE__, __LINE__, ##args);
 
@@ -37,7 +38,7 @@ struct
 	{
 		int h, height;
 	};
-
+	
 	uint32_t *pixels;
 } frame = {0};
 
@@ -47,6 +48,7 @@ struct
 	int x, y;
 	uint8_t buttons;
 } mouse;
+
 enum
 {
 	MOUSE_LEFT = 0b1,
@@ -57,14 +59,21 @@ enum
 };
 
 // arrays to hold the sprites
-Sprite* blackPieces[6] = {0};
-Sprite* whitePieces[6] = {0};
+Sprite *blackPieces[6] = {0};
+Sprite *whitePieces[6] = {0};
+Board *gameBoard;
+
+struct {
+	Piece *selectedPiece;
+	int x, y;
+} SelectedPieceInfo = {NULL, 0, 0};
 
 
+int xOffSet = 20;
+int yOffSet = 30;
+int squareSize = 60;
 
 LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam);
-
-
 
 // This function is responsible of loading the sprites the global variables [color]Pieces
 // The directory should be set to C-Chess/src when running the program or else the path to the sprites will be invalid
@@ -85,19 +94,19 @@ void loadSprites()
 	whitePieces[4] = loadSprite("./assets/white/w_knight.png");
 	whitePieces[5] = loadSprite("./assets/white/w_pawn.png");
 
-/*	FIXME: the sprites use the RGBA pixel format yet the window uses ARGB this should not break the sprite, yet it does... 
-		Not applying RGBAToARGB is fine, the pixels would just use the alpha value of the previous as rgbARGBa
-		
-		for (int i = 0; i < 6; i++) {
-			if (blackPieces[i]) {
-				RGBAToARGB(blackPieces[i]);
+	/*	FIXME: the sprites use the RGBA pixel format yet the window uses ARGB this should not break the sprite, yet it does...
+			Not applying RGBAToARGB is fine, the pixels would just use the alpha value of the previous as rgbARGBa
+
+			for (int i = 0; i < 6; i++) {
+				if (blackPieces[i]) {
+					RGBAToARGB(blackPieces[i]);
+				}
+				if (whitePieces[i]) {
+					RGBAToARGB(whitePieces[i]);
+				}
 			}
-			if (whitePieces[i]) {
-				RGBAToARGB(whitePieces[i]);
-			}
-		}
-*/
-	};
+	*/
+};
 
 void drawSquare(uint32_t *pixels, int x, int y, int width, int height, int color)
 {
@@ -122,13 +131,51 @@ void drawSquare(uint32_t *pixels, int x, int y, int width, int height, int color
 	}
 }
 
-void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece) {
-	for (int i = 0; i < piece->height; i++) {
+void drawCircle(uint32_t *pixels, int x, int y, int r, int color)
+{
+	for (int i = -r; i <= r; i++) {
+		for (int j = -r; j <= r; j++) {
+			double distance = ((double)(i * i + j * j)) / ((double)(r * r));
+			if (distance <= 1.0) {
+				int pixelX = x + i;
+				int pixelY = y + j;
+
+				if (pixelX >= 0 && pixelX < frame.width && pixelY >= 0 && pixelY < frame.height) {
+					int pixelIndex = pixelX + pixelY * frame.width;
+
+					uint8_t alpha = (uint8_t)((1.0 - distance) * 255);
+					alpha = (uint8_t)((1.0 - distance) * ((color >> 24) & 0xFF));
+					uint8_t srcRed = (color >> 16) & 0xFF;
+					uint8_t srcGreen = (color >> 8) & 0xFF;
+					uint8_t srcBlue = color & 0xFF;
+
+					uint32_t destPixel = pixels[pixelIndex];
+					uint8_t destRed = (destPixel >> 16) & 0xFF;
+					uint8_t destGreen = (destPixel >> 8) & 0xFF;
+					uint8_t destBlue = destPixel & 0xFF;
+
+					float alphaFactor = alpha / 255.0f;
+
+					uint8_t blendedRed = (uint8_t)((srcRed * alphaFactor) + (destRed * (1 - alphaFactor)));
+					uint8_t blendedGreen = (uint8_t)((srcGreen * alphaFactor) + (destGreen * (1 - alphaFactor)));
+					uint8_t blendedBlue = (uint8_t)((srcBlue * alphaFactor) + (destBlue * (1 - alphaFactor)));
+					pixels[pixelIndex] = (0xFF << 24) | (blendedRed << 16) | (blendedGreen << 8) | blendedBlue;
+				}
+			}
+		}
+	}
+}
+
+void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece)
+{
+	for (int i = 0; i < piece->height; i++)
+	{
 		int destY = y + (piece->height - 1 - i); // Flip vertically
 		if (destY < 0 || destY >= frame.height)
 			continue;
 
-		for (int j = 0; j < piece->width; j++) {
+		for (int j = 0; j < piece->width; j++)
+		{
 			int destX = x + j;
 			if (destX < 0 || destX >= frame.width)
 				continue;
@@ -163,6 +210,7 @@ void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece) {
 }
 
 /*
+
 void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece)
 {
 	for (int i = piece->height - 1; i >= 0; i--)
@@ -188,8 +236,7 @@ void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece)
 		}
 	}
 }
-
-
+*/
 
 void drawBoard(Board *board)
 {
@@ -198,22 +245,20 @@ void drawBoard(Board *board)
 
 	Draws the current state of the board
 	Its a private function
-	
+
 	*/
 
 	// The first byte is the alpha channel
-	int light = 0xFF7c4c3e;	// #7c4c3e
-	int dark =  0xFF512a2a;	// #512a2a
+	int light = 0xFF7c4c3e; // #7c4c3e
+	int dark = 0xFF512a2a;	// #512a2a
+
+	int hint = 0x40080808; //#080808 
 
 	Sprite *pieceToBeDrawn = whitePieces[2];
-	int squareSize = 60; 
-	int xOffSet = 20; 
-	int yOffSet = 30;
+	
 	Piece curPiece;
 
-
-
-	Sprite** pieceArr; // this pointer points to an arr of sprites. currently not set.
+	Sprite **pieceArr; // this pointer points to an arr of sprites. currently not set.
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -230,29 +275,53 @@ void drawBoard(Board *board)
 				drawSquare(frame.pixels, xCord, yCord, squareSize, squareSize, dark);
 			}
 
-			curPiece = board->grid[7-j][7-i];
+			curPiece = board->grid[7 - j][i];
 			switch (getColor(&curPiece))
 			{
 			case 0:
 				pieceArr = whitePieces; // sets the pieceArr to the white pieces
 				break;
-			
+
 			case 1:
 				pieceArr = blackPieces; // sets the pieceArr to the black pieces
 
 				break;
 			}
-			
 
-			if (curPiece != EMPTY_CELL){ // if the square isn't empty don't attempt to draw it. 
-				pieceToBeDrawn = pieceArr[getClass(&curPiece)];			
-				drawPiece(frame.pixels, xCord + 5, yCord + 5, pieceToBeDrawn);	
+			if (curPiece != EMPTY_CELL)
+			{ // if the square isn't empty don't attempt to draw it.
+				pieceToBeDrawn = pieceArr[getClass(&curPiece)];
+				drawPiece(frame.pixels, xCord + 5, yCord + 5, pieceToBeDrawn);
 			}
-			//drawSprite(frame.pixels, xCord, yCord, board);
+			// drawSprite(frame.pixels, xCord, yCord, board);
+
+
+
+		}
+
+	if (SelectedPieceInfo.selectedPiece)
+	{
+
+		int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
+		int dst[2] = {0, 0};
+		for (int y = 0; y < 8; y++) {
+			for (int x = 0; x < 8; x++) {
+				dst[0] = 7-y;
+				dst[1] = x;
+
+				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst )) 
+				{
+					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
+					int hintX = ((x) * squareSize) + xOffSet + squareSize / 2;
+					int hintY = ((y) * squareSize) + yOffSet + squareSize / 2;
+					drawCircle(frame.pixels, hintX, hintY, squareSize / 6, hint);
+				}
+			}
 		}
 	}
+	
+	}
 }
-
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
@@ -272,8 +341,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	bitmap_info.bmiHeader.biCompression = BI_RGB;
 	bitmap_device_context = CreateCompatibleDC(0);
 
-	
-
 	window_handle = CreateWindow(window_class_name, L"C-Chess", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
 								 CW_USEDEFAULT, CW_USEDEFAULT, WINWidth, WINHeight, NULL, NULL, hInstance, NULL);
 	if (window_handle == NULL)
@@ -284,20 +351,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
 	// end of boiler plate
 
-
 	// Loading data game stuff
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
-	Board board;
-	board.grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
+	Board *board; // allocate memory for the Board object
+	board = (Board *) malloc(sizeof(Board));
+	gameBoard = board;
+	board->grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
-
-	for (int i = 0; i < 8; i++) 
+	for (int i = 0; i < 8; i++)
 	{
-		board.grid[i] = malloc(8 * sizeof(Piece)); // allocates memory for a row of the grid
-		memcpy(board.grid[i], initialBoardData[i], 8 * sizeof(Piece)); // copies a row from the defaultBoard to board
+		board->grid[i] = malloc(8 * sizeof(Piece));					   // allocates memory for a row of the grid
+		memcpy(board->grid[i], initialBoardData[i], 8 * sizeof(Piece)); // copies a row from the defaultBoard to board
 	}
-	
 
 	// Window loop
 	while (!quit)
@@ -311,9 +377,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 		}
 
 		drawSquare(frame.pixels, 0, 0, frame.width, frame.height, 0xFFFFFFFF); // draws the white background, should run once i guess...
-		drawBoard(&board); // updates the board
+		drawBoard(board);													   // updates the board
 
-		
 		InvalidateRect(window_handle, NULL, FALSE);
 		UpdateWindow(window_handle); // this is what actually draws the pixels
 	}
@@ -321,9 +386,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	// Free allocated memory for board grid
 	for (int i = 0; i < 8; i++)
 	{
-		free(board.grid[i]);
+		free(board->grid[i]);
 	}
-	free(board.grid);
+	free(board->grid);
 
 	return 0;
 }
@@ -384,6 +449,32 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 
 	case WM_LBUTTONDOWN:
 		mouse.buttons |= MOUSE_LEFT;
+
+		int xCord = (mouse.x - xOffSet) / squareSize;
+		int yCord = (mouse.y - yOffSet) / squareSize;
+		Piece *nextPiece = getPieceAt(gameBoard, xCord, yCord);
+
+		if (*nextPiece == EMPTY_CELL) {
+
+			SelectedPieceInfo.selectedPiece = NULL;
+			SelectedPieceInfo.x = -1;
+			SelectedPieceInfo.y = -1;
+		}
+
+		else if (!SelectedPieceInfo.selectedPiece) {
+
+			SelectedPieceInfo.selectedPiece = nextPiece;
+			SelectedPieceInfo.x = xCord;
+			SelectedPieceInfo.y = yCord;
+	
+		}
+		else if (getColor(nextPiece) == getColor(SelectedPieceInfo.selectedPiece)) 
+		{
+			SelectedPieceInfo.selectedPiece = nextPiece;
+			SelectedPieceInfo.x = xCord;
+			SelectedPieceInfo.y = yCord;
+		}
+		
 		break;
 	case WM_LBUTTONUP:
 		mouse.buttons &= ~MOUSE_LEFT;
@@ -396,6 +487,11 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		break;
 	case WM_RBUTTONDOWN:
 		mouse.buttons |= MOUSE_RIGHT;
+
+		if (SelectedPieceInfo.selectedPiece) {
+
+			SelectedPieceInfo.selectedPiece = NULL;
+		}
 		break;
 	case WM_RBUTTONUP:
 		mouse.buttons &= ~MOUSE_RIGHT;
@@ -426,8 +522,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 	}
 	break;
 
-
-	break;
+		break;
 
 	default:
 		return DefWindowProc(window_handle, message, wParam, lParam);

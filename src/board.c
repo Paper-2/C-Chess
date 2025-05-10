@@ -14,7 +14,7 @@ Piece initialBoardData[8][8] = {
     {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
     {EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL, EMPTY_CELL},
     {0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010, 0b1010},
-    {0b0100, 0b1000, 0b0110, 0b0010, 0b0000, 0b0110, 0b1000, 0b1010}};
+    {0b0100, 0b1000, 0b0110, 0b0010, 0b0000, 0b0110, 0b1000, 0b0100}};
 
 int turn;
 int enPassant;
@@ -51,6 +51,16 @@ Board *makeEmptyBoard()
 // { #TODO
 //     return nullptr;
 // }
+
+Piece *getPieceAt(Board *board, int x, int y)
+{
+    // 
+    if (x < 0 || x > 7 || y < 0 || y > 7) {
+        return NULL; // Return NULL if the coordinates are out of bounds
+    }
+
+    return &board->grid[7-y][x];
+}
 
 void freeBoard(Board *board)
 {
@@ -111,26 +121,27 @@ int isValidMove(Board *board, Piece *piece, int src[2], int dest[2])
         return 0; // invalid move
     }
 
-    printf("src piece %s, dest piece %s\n", pieceToString(*piece), pieceToString(board->grid[dest[0]][dest[1]]));
-
-    if (getColor(piece) == getColor(&board->grid[dest[0]][dest[1]]))
+    
+    Piece *pieceAtDest = &board->grid[dest[0]][dest[1]];
+    
+    if (getColor(piece) == getColor(pieceAtDest) && *pieceAtDest != EMPTY_CELL)
     {
         return 0; // invalid move, the piece is of the same color as the destination piece
     }
 
     switch (getClass(piece)) // check the piece type
     {
-    case 0b0001: // King
+    case KING: // King
         return isValidMoveKing(board, piece, src, dest);
-    case 0b0010: // Queen
+    case QUEEN: // Queen
         return isValidMoveQueen(board, piece, src, dest);
-    case 0b0011: // Rook
+    case ROOK: // Rook
         return isValidMoveRook(board, piece, src, dest);
-    case 0b0100: // Bishop
+    case BISHOP: // Bishop
         return isValidMoveBishop(board, piece, src, dest);
-    case 0b0101: // Knight
+    case KNIGHT: // Knight
         return isValidMoveKnight(board, piece, src, dest);
-    case 0b0110: // Pawn
+    case PAWN: // Pawn
         return isValidMovePawn(board, piece, src, dest);
 
     case 0b1111111: // Empty cell
@@ -190,7 +201,7 @@ int isValidMoveKnight(Board *, Piece *, int src[2], int dest[2])
     return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
 
 }
-int isValidMovePawn(Board *board, Piece *, int src[2], int dest[2])
+int isValidMovePawn(Board *board, Piece *piece, int src[2], int dest[2])
 {
     /*    int isEmpty = isSpaceFree(board, dest); // check if the destination cell is empty
 
@@ -213,20 +224,22 @@ int isValidMovePawn(Board *board, Piece *, int src[2], int dest[2])
     }*/
 
     int isEmpty = isSpaceFree(board, dest); // Check if the destination cell is empty
-    int color = getColor(&board->grid[src[0]][src[1]]); // Get the pawn's color (1 for black, 0 for white)
+    int color = getColor(piece); // Get the pawn's color (1 for black, 0 for white)
 
     // Determine the direction of movement based on the pawn's color
-    int direction = (color == 1) ? -1 : 1;
+    int direction = (color == 1) ? 1 : -1;
 
     // Calculate the row and column differences
     int rowDiff = dest[0] - src[0];
     int colDiff = abs(dest[1] - src[1]);
+    
+    if (colDiff > 1 || rowDiff > 2) return 0;
 
     // Check for forward movement
     if (colDiff == 0 && isEmpty)
     {
         // Pawns can move forward one square, or two squares if on their starting row
-        if (rowDiff == direction || (rowDiff == 2 * direction && src[0] == (color == 1 ? 6 : 1)))
+        if (rowDiff == direction || (rowDiff == 2 * direction && src[0] == (color == 0 ? 6 : 1)))
         {
             return 1; 
         }
