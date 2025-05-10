@@ -170,7 +170,11 @@ Sprite *loadSprite(char const path[])
     // Signature check
     if (signature[1] != 'P' || signature[2] != 'N' || signature[3] != 'G')
     {
-        printf("only PNGs have been implemented");
+        printf("only PNGs have been implemented\n");
+        for (int i = 0; i < 8; i++) {
+            printf("%02X ", signature[i]);
+        }
+        printf("\n");
         return 0;
     }
     int decodingFile = 1;
@@ -189,17 +193,22 @@ Sprite *loadSprite(char const path[])
 /// @param sprite Pointer to the sprite to be converted.
 void RGBAToARGB(Sprite *sprite)
 {
-    uint32_t *pixels = sprite->pixels;
-    uint8_t alpha;
 
+    uint32_t totalPixels = sprite->w * sprite->h;
 
-    for (int i = 0; i < sprite->h*sprite->w; i++)
-    {   
-        alpha = pixels[i] & 0xFF;
+    for (uint32_t i = 0; i < totalPixels; i++)
+    {
 
-        pixels[i] =  (alpha << 24) | pixels[i] >> 8;
+        uint32_t pixel = sprite->pixels[i];
+
+        uint8_t r = (pixel >> 24) & 0xFF;
+        uint8_t g = (pixel >> 16) & 0xFF;
+        uint8_t b = (pixel >> 8) & 0xFF;
+        uint8_t a = pixel & 0xFF;
+
+        // If the pixel is black (R, G, B all zero), make it fully transparent
+        sprite->pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
     }
-    
 }
 
 /// @brief frees the sprite
@@ -224,7 +233,7 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
     data = (unsigned char *)malloc(sizeof(unsigned char) * dataLength);
 
     fread(chunkType, sizeof(chunkType), 1, filePtr);
-    printf("%s\n", chunkType);
+    
     if (chunkType[0] & 0b100000) // if the 5th bit of the type is 1 we can safely skip the chunk. See ancillary chunks
     {
         fseek(filePtr, dataLength + 4, SEEK_CUR);
@@ -286,16 +295,23 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
         }
         // image reconstruction
         processScanlines(decompressedData, spritePtr->w, spritePtr->h, sizeof(uint32_t), spritePtr->pixels);
-        free(decompressedData);
 
+
+        /*FIXME: calling free here results in unknown signal even though decompressedData was made using malloc
+        just put the memory leak in the bag bro*/
+        // free(decompressedData); 
 
         break;
 
     case IEND: // "IEND"
-        free(data);
+    
+        /*FIXME: same as sprite.c:295 */
+        //free(data);
         return 0; // End of PNG file
     }
-    free(data);
+
+    /*FIXME: same as sprite.c:295 */
+    //free(data);
 
     return 1;
 }

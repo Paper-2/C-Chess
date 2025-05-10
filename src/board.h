@@ -32,7 +32,7 @@ int isValidMove(Board *, Piece *, int[2], int[2]); // checks if the move is vali
 
 
 int isSpaceFree(Board *, int[2]); // checks if the space is empty
-
+extern Piece initialBoardData[8][8];
 extern int turn;
 extern int enPassant;
 extern int wCastle;
