@@ -122,6 +122,47 @@ void drawSquare(uint32_t *pixels, int x, int y, int width, int height, int color
 	}
 }
 
+void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece) {
+	for (int i = 0; i < piece->height; i++) {
+		int destY = y + (piece->height - 1 - i); // Flip vertically
+		if (destY < 0 || destY >= frame.height)
+			continue;
+
+		for (int j = 0; j < piece->width; j++) {
+			int destX = x + j;
+			if (destX < 0 || destX >= frame.width)
+				continue;
+
+			int srcIndex = i * piece->width + j;
+			int destIndex = destY * frame.width + destX;
+
+			uint32_t srcPixel = piece->pixels[srcIndex];
+			uint32_t destPixel = pixels[destIndex];
+
+			uint8_t srcAlpha = (srcPixel >> 24) & 0xFF;
+			uint8_t srcRed = (srcPixel >> 16) & 0xFF;
+			uint8_t srcGreen = (srcPixel >> 8) & 0xFF;
+			uint8_t srcBlue = srcPixel & 0xFF;
+
+			uint8_t destRed = (destPixel >> 16) & 0xFF;
+			uint8_t destGreen = (destPixel >> 8) & 0xFF;
+			uint8_t destBlue = destPixel & 0xFF;
+
+			// Normalize alpha to [0, 1]
+			float alpha = srcAlpha / 255.0f;
+
+			// Blend each color channel
+			uint8_t blendedRed = (uint8_t)((srcRed * alpha) + (destRed * (1 - alpha)));
+			uint8_t blendedGreen = (uint8_t)((srcGreen * alpha) + (destGreen * (1 - alpha)));
+			uint8_t blendedBlue = (uint8_t)((srcBlue * alpha) + (destBlue * (1 - alpha)));
+
+			// Write the blended pixel back
+			pixels[destIndex] = (0xFF << 24) | (blendedRed << 16) | (blendedGreen << 8) | blendedBlue;
+		}
+	}
+}
+
+/*
 void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece)
 {
 	for (int i = piece->height - 1; i >= 0; i--)
