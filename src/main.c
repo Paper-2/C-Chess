@@ -78,6 +78,8 @@ int squareSize = 60;
 
 LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam);
 
+void generateMoves();
+
 // This function is responsible of loading the sprites the global variables [color]Pieces
 // The directory should be set to C-Chess/src when running the program or else the path to the sprites will be invalid
 void loadSprites()
@@ -307,16 +309,14 @@ void drawBoard(Board *board)
 				int x, y;
 				for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
 				{
-					x = SelectedPieceInfo.possibleMoves[i][0];
-					y = SelectedPieceInfo.possibleMoves[i][1];
-					
-					int hintX = ((x) * squareSize) + xOffSet + squareSize / 2;
-					int hintY = ((y) * squareSize) + yOffSet + squareSize / 2;
+					x = SelectedPieceInfo.possibleMoves[i][1];
+					y = 7 - SelectedPieceInfo.possibleMoves[i][0];
+
+					int hintX = ((x)*squareSize) + xOffSet + squareSize / 2;
+					int hintY = ((y)*squareSize) + yOffSet + squareSize / 2;
 					drawCircle(frame.pixels, hintX, hintY, squareSize / 6, hint);
 				}
-				
 			}
-
 		}
 	}
 }
@@ -452,27 +452,18 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 
 		int xCord = (mouse.x - xOffSet) / squareSize;
 		int yCord = (mouse.y - yOffSet) / squareSize;
-		if (nextPiece)
-			*prevSelected = nextPiece; // only update prev when if the nextPiece is not null
-		*nextPiece = getPieceAt(gameBoard, xCord, yCord);
+		if (SelectedPieceInfo.selectedPiece)
+			prevSelected = SelectedPieceInfo.selectedPiece; // only update prev when if the nextPiece is not null
+		nextPiece = getPieceAt(gameBoard, xCord, yCord);
 
-		if (*nextPiece == EMPTY_CELL)
-		{
-
-			SelectedPieceInfo.selectedPiece = NULL;
-			SelectedPieceInfo.x = -1;
-			SelectedPieceInfo.y = -1;
-			break;
-		}
-
-		else if (!SelectedPieceInfo.selectedPiece)
+		if (!SelectedPieceInfo.selectedPiece)
 		{
 
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
 			SelectedPieceInfo.y = yCord;
 		}
-		else if (getColor(nextPiece) == getColor(SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected)) // if they are of the color but not the same piece.
+		else if (getColor(nextPiece) == getColor(SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected) && (*nextPiece != EMPTY_CELL)) // if they are of the color but not the same piece.
 		{
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
@@ -485,51 +476,35 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		{
 			// updateMoves();
 
-			if (SelectedPieceInfo.selectedPiece && !SelectedPieceInfo.isCurrent)
-			{
-
-				int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
-				int dst[2] = {0, 0};
-				int counter = 0;
-				for (int y = 0; y < 8; y++)
-				{
-					for (int x = 0; x < 8; x++)
-					{
-						dst[0] = 7 - y;
-						dst[1] = x;
-
-						if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
-						{
-							// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
-
-							SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
-							SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
-							counter++;
-						}
-					}
-				}
-
-				SelectedPieceInfo.isCurrent = true;
-			}
+			// will generate the moveset if there's a piece selected and there is not already a moveset made for that specific piece.
+			generateMoves();
 
 			int dst[2] = {7 - yCord, xCord};
 
-			if (isMovePossible)
+			bool isMovePossible = false;
+			for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
 			{
-				movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
-			}
-			else
-			{
-			SelectedPieceInfo.selectedPiece = NULL;
-			SelectedPieceInfo.x = -1;
-			SelectedPieceInfo.y = -1;
+				if (SelectedPieceInfo.possibleMoves[i][0] == dst[0] && SelectedPieceInfo.possibleMoves[i][1] == dst[1])
+				{
+					movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
+					isMovePossible = true;
+					SelectedPieceInfo.selectedPiece = NULL;
+					SelectedPieceInfo.x = -1;
+					SelectedPieceInfo.y = -1;
+					SelectedPieceInfo.isCurrent = false;
+					SelectedPieceInfo.moveQuantity = 0;
+					break;
+				}
 			}
 
-			// if isMovePossible(src, dst)
+			if ((!isMovePossible) && (dst[0] != 7 - SelectedPieceInfo.y && dst[1] != SelectedPieceInfo.x))
 			{
-				// movePiece(src, dst)
+				SelectedPieceInfo.selectedPiece = NULL;
+				SelectedPieceInfo.x = -1;
+				SelectedPieceInfo.y = -1;
+				SelectedPieceInfo.isCurrent = false;
+				SelectedPieceInfo.moveQuantity = 0;
 			}
-			// else deselect piece
 		}
 
 		break;
@@ -586,4 +561,35 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		return DefWindowProc(window_handle, message, wParam, lParam);
 	}
 	return 0;
+}
+
+void generateMoves()
+{
+	if (SelectedPieceInfo.selectedPiece && !SelectedPieceInfo.isCurrent)
+	{
+
+		int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
+		int dst[2] = {0, 0};
+		int counter = 0;
+		for (int y = 0; y < 8; y++)
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				dst[0] = 7 - y;
+				dst[1] = x;
+
+				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
+				{
+					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
+
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+				}
+			}
+		}
+
+		SelectedPieceInfo.moveQuantity = counter;
+		SelectedPieceInfo.isCurrent = true;
+	}
 }
