@@ -76,8 +76,6 @@ The data bytes in the IDAT chunk contains the following:
 */
 
 
-FILE *filePtr;
-
 int readChunk(FILE *filePtr, Sprite *spritePrt);
 
 void processScanlines(uint8_t *uncompressedData, uint32_t width, uint32_t height, uint8_t bytesPerPixel, uint32_t *pixels) {
@@ -154,7 +152,7 @@ void processScanlines(uint8_t *uncompressedData, uint32_t width, uint32_t height
 /// @return A pointer to the loaded Sprite structure, or NULL if loading fails.
 Sprite *loadSprite(char const path[])
 {
-
+    FILE *filePtr;
     unsigned char signature[8];
     Sprite *spritePtr = (Sprite *)malloc(sizeof(Sprite));
     if (!spritePtr)

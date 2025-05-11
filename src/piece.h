@@ -9,6 +9,7 @@
 // The second dimension is the size of each piece. The size of each piece is the number of squares in the piece.
 // The number of squares in the piece is the number of squares in the grid. The grid is a pointer to a pointer.
 // See boardExample for how the grid looks like.
+#define EMPTY_CELL 0b11111111
 #include <stdint.h>
 typedef uint8_t Piece;
 
@@ -18,6 +19,7 @@ void setClass(Piece *, uint8_t);        // sets the class
 
 void killPiece(Piece *); // kills a piece by deleting it and deallocating the memory
 
+uint8_t areAllies(Piece*, Piece*);
 uint8_t getColor(Piece *); // gets the color of a piece
 uint8_t getClass(Piece *); // gets the type of a piece
 
