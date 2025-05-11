@@ -391,6 +391,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	return 0;
 }
 
+
+// global vars for the controller i think...
+Piece *prevSelected;
+Piece *nextPiece = NULL;
+
 LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static bool has_focus = true;
@@ -447,23 +452,23 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 
 	case WM_LBUTTONDOWN:
 		mouse.buttons |= MOUSE_LEFT;
-		Piece *prevSelected;
-		Piece *nextPiece = NULL;
+
 
 		int xCord = (mouse.x - xOffSet) / squareSize;
 		int yCord = (mouse.y - yOffSet) / squareSize;
+
 		if (SelectedPieceInfo.selectedPiece)
 			prevSelected = SelectedPieceInfo.selectedPiece; // only update prev when if the nextPiece is not null
 		nextPiece = getPieceAt(gameBoard, xCord, yCord);
 
-		if (!SelectedPieceInfo.selectedPiece)
+		if (!SelectedPieceInfo.selectedPiece && *nextPiece != EMPTY_CELL)
 		{
 
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
 			SelectedPieceInfo.y = yCord;
 		}
-		else if (getColor(nextPiece) == getColor(SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected) && (*nextPiece != EMPTY_CELL)) // if they are of the color but not the same piece.
+		else if (areAllies(nextPiece, SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected) && (*nextPiece != EMPTY_CELL)) // if they are of the color but not the same piece.
 		{
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
@@ -496,7 +501,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 					break;
 				}
 			}
-
+			// this if statement is not needed. I think.
 			if ((!isMovePossible) && (dst[0] != 7 - SelectedPieceInfo.y && dst[1] != SelectedPieceInfo.x))
 			{
 				SelectedPieceInfo.selectedPiece = NULL;
