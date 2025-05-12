@@ -42,6 +42,18 @@ inline void killPiece(Piece *bitmask)
 	free(bitmask);
 }
 
+uint8_t areAllies(Piece* bitmask1, Piece* bitmask2) {
+
+	if (bitmask1 == NULL || bitmask2 == NULL) {
+		return 0;
+	}
+	if (*bitmask1 == EMPTY_CELL || *bitmask2 == EMPTY_CELL) {
+		return 0;
+	}
+
+	return getColor(bitmask1) == getColor(bitmask2);
+}
+
 inline uint8_t getColor(Piece *bitmask)
 {
 	// gets the color of a piece
