@@ -38,7 +38,7 @@ struct
 	{
 		int h, height;
 	};
-	
+
 	uint32_t *pixels;
 } frame = {0};
 
@@ -63,17 +63,22 @@ Sprite *blackPieces[6] = {0};
 Sprite *whitePieces[6] = {0};
 Board *gameBoard;
 
-struct {
+struct
+{
 	Piece *selectedPiece;
 	int x, y;
+	int possibleMoves[64][2];
+	int moveQuantity;
+	bool isCurrent; // whether or not the list of possible moves for the selected piece needs to be updated
 } SelectedPieceInfo = {NULL, 0, 0};
-
 
 int xOffSet = 20;
 int yOffSet = 30;
 int squareSize = 60;
 
 LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam);
+
+void generateMoves();
 
 // This function is responsible of loading the sprites the global variables [color]Pieces
 // The directory should be set to C-Chess/src when running the program or else the path to the sprites will be invalid
@@ -133,14 +138,18 @@ void drawSquare(uint32_t *pixels, int x, int y, int width, int height, int color
 
 void drawCircle(uint32_t *pixels, int x, int y, int r, int color)
 {
-	for (int i = -r; i <= r; i++) {
-		for (int j = -r; j <= r; j++) {
+	for (int i = -r; i <= r; i++)
+	{
+		for (int j = -r; j <= r; j++)
+		{
 			double distance = ((double)(i * i + j * j)) / ((double)(r * r));
-			if (distance <= 1.0) {
+			if (distance <= 1.0)
+			{
 				int pixelX = x + i;
 				int pixelY = y + j;
 
-				if (pixelX >= 0 && pixelX < frame.width && pixelY >= 0 && pixelY < frame.height) {
+				if (pixelX >= 0 && pixelX < frame.width && pixelY >= 0 && pixelY < frame.height)
+				{
 					int pixelIndex = pixelX + pixelY * frame.width;
 
 					uint8_t alpha = (uint8_t)((1.0 - distance) * 255);
@@ -252,10 +261,10 @@ void drawBoard(Board *board)
 	int light = 0xFF7c4c3e; // #7c4c3e
 	int dark = 0xFF512a2a;	// #512a2a
 
-	int hint = 0x40080808; //#080808 
+	int hint = 0x40080808; // #080808
 
 	Sprite *pieceToBeDrawn = whitePieces[2];
-	
+
 	Piece curPiece;
 
 	Sprite **pieceArr; // this pointer points to an arr of sprites. currently not set.
@@ -295,31 +304,20 @@ void drawBoard(Board *board)
 			}
 			// drawSprite(frame.pixels, xCord, yCord, board);
 
-
-
-		}
-
-	if (SelectedPieceInfo.selectedPiece)
-	{
-
-		int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
-		int dst[2] = {0, 0};
-		for (int y = 0; y < 8; y++) {
-			for (int x = 0; x < 8; x++) {
-				dst[0] = 7-y;
-				dst[1] = x;
-
-				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst )) 
+			if (SelectedPieceInfo.isCurrent)
+			{
+				int x, y;
+				for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
 				{
-					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
-					int hintX = ((x) * squareSize) + xOffSet + squareSize / 2;
-					int hintY = ((y) * squareSize) + yOffSet + squareSize / 2;
+					x = SelectedPieceInfo.possibleMoves[i][1];
+					y = 7 - SelectedPieceInfo.possibleMoves[i][0];
+
+					int hintX = ((x)*squareSize) + xOffSet + squareSize / 2;
+					int hintY = ((y)*squareSize) + yOffSet + squareSize / 2;
 					drawCircle(frame.pixels, hintX, hintY, squareSize / 6, hint);
 				}
 			}
 		}
-	}
-	
 	}
 }
 
@@ -355,13 +353,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
 
 	Board *board; // allocate memory for the Board object
-	board = (Board *) malloc(sizeof(Board));
+	board = (Board *)malloc(sizeof(Board));
 	gameBoard = board;
 	board->grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
 	for (int i = 0; i < 8; i++)
 	{
-		board->grid[i] = malloc(8 * sizeof(Piece));					   // allocates memory for a row of the grid
+		board->grid[i] = malloc(8 * sizeof(Piece));						// allocates memory for a row of the grid
 		memcpy(board->grid[i], initialBoardData[i], 8 * sizeof(Piece)); // copies a row from the defaultBoard to board
 	}
 
@@ -392,6 +390,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
 	return 0;
 }
+
+
+// global vars for the controller i think...
+Piece *prevSelected;
+Piece *nextPiece = NULL;
 
 LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -450,31 +453,65 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 	case WM_LBUTTONDOWN:
 		mouse.buttons |= MOUSE_LEFT;
 
+
 		int xCord = (mouse.x - xOffSet) / squareSize;
 		int yCord = (mouse.y - yOffSet) / squareSize;
-		Piece *nextPiece = getPieceAt(gameBoard, xCord, yCord);
 
-		if (*nextPiece == EMPTY_CELL) {
+		if (SelectedPieceInfo.selectedPiece)
+			prevSelected = SelectedPieceInfo.selectedPiece; // only update prev when if the nextPiece is not null
+		nextPiece = getPieceAt(gameBoard, xCord, yCord);
 
-			SelectedPieceInfo.selectedPiece = NULL;
-			SelectedPieceInfo.x = -1;
-			SelectedPieceInfo.y = -1;
-		}
-
-		else if (!SelectedPieceInfo.selectedPiece) {
+		if (!SelectedPieceInfo.selectedPiece && *nextPiece != EMPTY_CELL)
+		{
 
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
 			SelectedPieceInfo.y = yCord;
-	
 		}
-		else if (getColor(nextPiece) == getColor(SelectedPieceInfo.selectedPiece)) 
+		else if (areAllies(nextPiece, SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected) && (*nextPiece != EMPTY_CELL)) // if they are of the color but not the same piece.
 		{
 			SelectedPieceInfo.selectedPiece = nextPiece;
 			SelectedPieceInfo.x = xCord;
 			SelectedPieceInfo.y = yCord;
+			SelectedPieceInfo.isCurrent = false;
+			SelectedPieceInfo.moveQuantity = 0;
 		}
-		
+
+		if (&nextPiece != &prevSelected) // nextPiece here will never be null due to previous if statements.
+		{
+			// updateMoves();
+
+			// will generate the moveset if there's a piece selected and there is not already a moveset made for that specific piece.
+			generateMoves();
+
+			int dst[2] = {7 - yCord, xCord};
+
+			bool isMovePossible = false;
+			for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
+			{
+				if (SelectedPieceInfo.possibleMoves[i][0] == dst[0] && SelectedPieceInfo.possibleMoves[i][1] == dst[1])
+				{
+					movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
+					isMovePossible = true;
+					SelectedPieceInfo.selectedPiece = NULL;
+					SelectedPieceInfo.x = -1;
+					SelectedPieceInfo.y = -1;
+					SelectedPieceInfo.isCurrent = false;
+					SelectedPieceInfo.moveQuantity = 0;
+					break;
+				}
+			}
+			// this if statement is not needed. I think.
+			if ((!isMovePossible) && (dst[0] != 7 - SelectedPieceInfo.y && dst[1] != SelectedPieceInfo.x))
+			{
+				SelectedPieceInfo.selectedPiece = NULL;
+				SelectedPieceInfo.x = -1;
+				SelectedPieceInfo.y = -1;
+				SelectedPieceInfo.isCurrent = false;
+				SelectedPieceInfo.moveQuantity = 0;
+			}
+		}
+
 		break;
 	case WM_LBUTTONUP:
 		mouse.buttons &= ~MOUSE_LEFT;
@@ -488,7 +525,8 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 	case WM_RBUTTONDOWN:
 		mouse.buttons |= MOUSE_RIGHT;
 
-		if (SelectedPieceInfo.selectedPiece) {
+		if (SelectedPieceInfo.selectedPiece)
+		{
 
 			SelectedPieceInfo.selectedPiece = NULL;
 		}
@@ -528,4 +566,35 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		return DefWindowProc(window_handle, message, wParam, lParam);
 	}
 	return 0;
+}
+
+void generateMoves()
+{
+	if (SelectedPieceInfo.selectedPiece && !SelectedPieceInfo.isCurrent)
+	{
+
+		int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
+		int dst[2] = {0, 0};
+		int counter = 0;
+		for (int y = 0; y < 8; y++)
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				dst[0] = 7 - y;
+				dst[1] = x;
+
+				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
+				{
+					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
+
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+				}
+			}
+		}
+
+		SelectedPieceInfo.moveQuantity = counter;
+		SelectedPieceInfo.isCurrent = true;
+	}
 }

@@ -1,5 +1,5 @@
 Date started: 4/27/2025
-Last updated: 05/06/2025
+Last updated: 05/10/2025
 
 Day 0 -- 2025-04-27
     - 12:39:53 The logging system was created.
@@ -18,7 +18,7 @@ Day 2 -- 2025-04-29 04:17:24.153780
 	- 04:17:24 Nothing was logged.
 
 Day 3 -- 2025-04-30
-	- 04:17:24 I will try to fix Visual studio before I continue doing work on the project
+	- 04:17:24 I will try to fix Visual studio before I continue doing work on the project 
 	- 04:31:16 it's fixed now
 	- 04:31:46 The problem was that I missed #ifndef FILENAME_H ... part (Amend: This is called a header guard
 				they work by preventing the header file being defined multiple times in the same object file)
@@ -26,7 +26,7 @@ Day 3 -- 2025-04-30
 	- 04:32:35 we love boiler plate don't we folks?	
 	- 04:35:26 I'll go to sleep now, but this is kind of huge. I will work more on this
 				when I wake up trust
-	- 04:38:50 --UPDATE FOR LOG-- I should implement a way to write this stuff a bit faster, and to tag logs
+	- 04:38:50 --UPDATE FOR LOG-- I should implement a way to write this stuff a bit faster, and to tag logs. ( this was done)
 
 Day 4 -- 2025-05-01
 	- 01:29:05 Yesterday I finished the piece code and header file
@@ -57,3 +57,43 @@ Days 6 to 8 -- 2025-05-05 01:41:36.607151
 
 Day 9 -- 2025-05-06
 	- 01:41:36 I need to learn how to handle mouse input
+	- 02:58:33 tomorrow (today) I will try to continue working on this thing.
+	- 23:08:53 back with another milkshake /t
+	- 23:41:13 #TODO: I need to learn how to make a bitmap from a vector file
+	- 23:41:27 rasterization, resize...
+	- 23:41:43 or just skip that one...
+
+Day 10 -- 2025-05-07
+	- 06:14:22 I have the board yippe
+	- 06:14:30 this is so cool
+
+Day 11 -- 2025-05-08
+	- 03:41:33 new task
+	- 03:41:38 make a png encoder
+	- 03:42:04 get the file from anywhere
+	- 03:42:17 Using the relative paths
+	- 19:05:14 I can now use relative paths 
+	- 19:05:41 I will have zero problems using rel paths from now on. 
+		For future reference, the problem was that the program was not being run from expected directory
+	- 19:06:05 just need to make sure where the .out binary is 
+	- 21:15:44 I can now read individual chunks yippee
+	- 21:16:12 now the actual hard part.... uncompress the IHAT chunk....
+	- 21:16:24 I'll kill myself someday
+	- 21:17:56 deadlock yippee
+
+Day 12 -- 2025-05-09
+	- 19:03:11 now I can convert a png to a sequence of rgba pixels
+	- 19:03:58 I don't know if its top to button or vice versa, well its actually (So I thought) from the later
+	- 22:52:22 drawboard now displays the board successfully
+
+Day 13 -- 2025-05-10
+	- 00:34:07 Apparently a filler bit is just that. A filler. it does not do anything, i'll krill myself
+	- 00:34:41 this means that I have to deal with handling the transparency myself....
+	- 17:26:28 the controller can now move pieces
+	- 17:26:51 and a hint circle will now be displayed wherever a piece could move
+	- 17:27:33 more work in isValidMove is needed as a piece like a rook can jump over pieces
+	- 17:27:51 castling is also needed
+	- 17:28:01 after all of this is done
+	- 17:28:20 I will work on adding sounds which will be fun!!!!@
+	- 17:29:32 earlier, I encountered a bug where the hint circle would be more transparent the farther it is from the left side, why this happens I don't know.
+	- 17:37:01 I also created a new branch for moving pieces

@@ -76,8 +76,6 @@ The data bytes in the IDAT chunk contains the following:
 */
 
 
-FILE *filePtr;
-
 int readChunk(FILE *filePtr, Sprite *spritePrt);
 
 void processScanlines(uint8_t *uncompressedData, uint32_t width, uint32_t height, uint8_t bytesPerPixel, uint32_t *pixels) {
@@ -154,7 +152,7 @@ void processScanlines(uint8_t *uncompressedData, uint32_t width, uint32_t height
 /// @return A pointer to the loaded Sprite structure, or NULL if loading fails.
 Sprite *loadSprite(char const path[])
 {
-
+    FILE *filePtr;
     unsigned char signature[8];
     Sprite *spritePtr = (Sprite *)malloc(sizeof(Sprite));
     if (!spritePtr)
@@ -297,21 +295,17 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
         processScanlines(decompressedData, spritePtr->w, spritePtr->h, sizeof(uint32_t), spritePtr->pixels);
 
 
-        /*FIXME: calling free here results in unknown signal even though decompressedData was made using malloc
-        just put the memory leak in the bag bro*/
-        // free(decompressedData); 
+        free(decompressedData); 
 
         break;
 
     case IEND: // "IEND"
     
-        /*FIXME: same as sprite.c:295 */
-        //free(data);
+        free(data);
         return 0; // End of PNG file
     }
 
-    /*FIXME: same as sprite.c:295 */
-    //free(data);
+    free(data);
 
     return 1;
 }
