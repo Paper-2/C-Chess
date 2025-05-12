@@ -295,21 +295,17 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
         processScanlines(decompressedData, spritePtr->w, spritePtr->h, sizeof(uint32_t), spritePtr->pixels);
 
 
-        /*FIXME: calling free here results in unknown signal even though decompressedData was made using malloc
-        just put the memory leak in the bag bro*/
-        // free(decompressedData); 
+        free(decompressedData); 
 
         break;
 
     case IEND: // "IEND"
     
-        /*FIXME: same as sprite.c:295 */
-        //free(data);
+        free(data);
         return 0; // End of PNG file
     }
 
-    /*FIXME: same as sprite.c:295 */
-    //free(data);
+    free(data);
 
     return 1;
 }
