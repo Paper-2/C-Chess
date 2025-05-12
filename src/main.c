@@ -70,13 +70,13 @@ struct
 	int possibleMoves[64][2];
 	int moveQuantity;
 	bool isCurrent; // whether or not the list of possible moves for the selected piece needs to be updated
-} SelectedPieceInfo = {NULL, 0, 0};
+} SelectedPieceInfo = {NULL, 0, 0, {{0, 0}}};
 
 int xOffSet = 20;
 int yOffSet = 30;
 int squareSize = 60;
 
-LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WPARAM wParam, LPARAM lParam);
 
 void generateMoves();
 
@@ -307,10 +307,10 @@ void drawBoard(Board *board)
 			if (SelectedPieceInfo.isCurrent)
 			{
 				int x, y;
-				for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
+				for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
 				{
-					x = SelectedPieceInfo.possibleMoves[i][1];
-					y = 7 - SelectedPieceInfo.possibleMoves[i][0];
+					x = SelectedPieceInfo.possibleMoves[moveIndex][1];
+					y = 7 - SelectedPieceInfo.possibleMoves[moveIndex][0];
 
 					int hintX = ((x)*squareSize) + xOffSet + squareSize / 2;
 					int hintY = ((y)*squareSize) + yOffSet + squareSize / 2;
@@ -323,6 +323,10 @@ void drawBoard(Board *board)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
+
+	(void)hPrevInstance;
+	(void)pCmdLine;
+	(void)nCmdShow;
 
 	// boiler plate
 	const wchar_t window_class_name[] = L"Window Class";
@@ -396,9 +400,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 Piece *prevSelected;
 Piece *nextPiece = NULL;
 
-LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static bool has_focus = true;
 
 	/*This is where the events are handled, I suppose this where the logic of some of the game will be handle*/
 	switch (message)
@@ -414,9 +417,9 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 	{
 		static PAINTSTRUCT paint;
 		static HDC device_context;
-		device_context = BeginPaint(window_handle, &paint);
+		device_context = BeginPaint(local_window_handle, &paint);
 		BitBlt(device_context, paint.rcPaint.left, paint.rcPaint.top, paint.rcPaint.right - paint.rcPaint.left, paint.rcPaint.bottom - paint.rcPaint.top, bitmap_device_context, paint.rcPaint.left, paint.rcPaint.top, SRCCOPY);
-		EndPaint(window_handle, &paint);
+		EndPaint(local_window_handle, &paint);
 	}
 	break;
 
@@ -430,18 +433,6 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		SelectObject(bitmap_device_context, bitmap);
 	}
 	break;
-
-	case WM_KILLFOCUS:
-	{
-		has_focus = false;
-		memset(keyboard, 0, 256 * sizeof(keyboard[0]));
-		mouse.buttons = 0;
-	}
-	break;
-
-	case WM_SETFOCUS:
-		has_focus = true;
-		break;
 
 	case WM_MOUSEMOVE:
 	{
@@ -487,9 +478,9 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 			int dst[2] = {7 - yCord, xCord};
 
 			bool isMovePossible = false;
-			for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
+			for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
 			{
-				if (SelectedPieceInfo.possibleMoves[i][0] == dst[0] && SelectedPieceInfo.possibleMoves[i][1] == dst[1])
+				if (SelectedPieceInfo.possibleMoves[moveIndex][0] == dst[0] && SelectedPieceInfo.possibleMoves[moveIndex][1] == dst[1])
 				{
 					movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
 					isMovePossible = true;
@@ -563,7 +554,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		break;
 
 	default:
-		return DefWindowProc(window_handle, message, wParam, lParam);
+		return DefWindowProc(local_window_handle, message, wParam, lParam);
 	}
 	return 0;
 }
