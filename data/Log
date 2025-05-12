@@ -1,5 +1,5 @@
 Date started: 4/27/2025
-Last updated: 05/10/2025
+Last updated: 05/12/2025
 
 Day 0 -- 2025-04-27
     - 12:39:53 The logging system was created.
@@ -97,3 +97,13 @@ Day 13 -- 2025-05-10
 	- 17:28:20 I will work on adding sounds which will be fun!!!!@
 	- 17:29:32 earlier, I encountered a bug where the hint circle would be more transparent the farther it is from the left side, why this happens I don't know.
 	- 17:37:01 I also created a new branch for moving pieces
+
+Days 14 -- 2025-05-11
+	- 02:49:50 Nothing was logged.
+
+Day 15 -- 2025-05-12
+	- 02:49:50 merged movingPieces into main
+	- 02:50:30 I want to start working on making tests for the Chess game just to change what im doing
+	- 02:51:45 I may also change the current way the folder is
+	- 02:51:57 but for now I eep
+	- 02:52:00 i think
