@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
 #include "board.h"
 #include "sprite.h"
 #include "utility.h"
@@ -85,19 +84,19 @@ void generateMoves();
 void loadSprites()
 {
 
-	blackPieces[0] = loadSprite("./assets/black/b_king.png");
-	blackPieces[1] = loadSprite("./assets/black/b_queen.png");
-	blackPieces[2] = loadSprite("./assets/black/b_rook.png");
-	blackPieces[3] = loadSprite("./assets/black/b_bishop.png");
-	blackPieces[4] = loadSprite("./assets/black/b_knight.png");
-	blackPieces[5] = loadSprite("./assets/black/b_pawn.png");
+	blackPieces[0] = loadSprite("./data/assets/black/b_king.png");
+	blackPieces[1] = loadSprite("./data/assets/black/b_queen.png");
+	blackPieces[2] = loadSprite("./data/assets/black/b_rook.png");
+	blackPieces[3] = loadSprite("./data/assets/black/b_bishop.png");
+	blackPieces[4] = loadSprite("./data/assets/black/b_knight.png");
+	blackPieces[5] = loadSprite("./data/assets/black/b_pawn.png");
 
-	whitePieces[0] = loadSprite("./assets/white/w_king.png");
-	whitePieces[1] = loadSprite("./assets/white/w_queen.png");
-	whitePieces[2] = loadSprite("./assets/white/w_rook.png");
-	whitePieces[3] = loadSprite("./assets/white/w_bishop.png");
-	whitePieces[4] = loadSprite("./assets/white/w_knight.png");
-	whitePieces[5] = loadSprite("./assets/white/w_pawn.png");
+	whitePieces[0] = loadSprite("./data/assets/white/w_king.png");
+	whitePieces[1] = loadSprite("./data/assets/white/w_queen.png");
+	whitePieces[2] = loadSprite("./data/assets/white/w_rook.png");
+	whitePieces[3] = loadSprite("./data/assets/white/w_bishop.png");
+	whitePieces[4] = loadSprite("./data/assets/white/w_knight.png");
+	whitePieces[5] = loadSprite("./data/assets/white/w_pawn.png");
 
 	/*	FIXME: the sprites use the RGBA pixel format yet the window uses ARGB this should not break the sprite, yet it does...
 			Not applying RGBAToARGB is fine, the pixels would just use the alpha value of the previous as rgbARGBa
@@ -357,7 +356,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
 
 	Board *board; // allocate memory for the Board object
-	board = (Board *)malloc(sizeof(Board));
+	board = (Board *) malloc(sizeof(Board));
 	gameBoard = board;
 	board->grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
