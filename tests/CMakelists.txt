@@ -1,0 +1,16 @@
+
+file(GLOB_RECURSE TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+)
+
+add_executable(test_src ${TEST_SOURCES})
+
+set_property(TARGET test_src PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+target_include_directories(test_src PUBLIC
+                    "${PROJECT_BINARY_DIR}"
+                    "${PROJECT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(test_src PRIVATE C-Chess)
+
+5
