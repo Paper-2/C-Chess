@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "board.h"
 #include "sprite.h"
 #include "utility.h"
@@ -83,6 +84,13 @@ void generateMoves();
 // The directory should be set to C-Chess/src when running the program or else the path to the sprites will be invalid
 void loadSprites()
 {
+
+	char cwd[MAX_PATH];
+	if (GetCurrentDirectoryA(MAX_PATH, cwd)) {
+		printf("Current working directory: %s\n", cwd);
+	} else {
+		PRINT_ERROR("Failed to get current working directory.\n");
+	}
 
 	blackPieces[0] = loadSprite("./data/assets/black/b_king.png");
 	blackPieces[1] = loadSprite("./data/assets/black/b_queen.png");
@@ -432,6 +440,16 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 		SelectObject(bitmap_device_context, bitmap);
 	}
 	break;
+
+	case WM_KILLFOCUS:
+	{
+		memset(keyboard, 0, 256 * sizeof(keyboard[0]));
+		mouse.buttons = 0;
+	}
+	break;
+
+	case WM_SETFOCUS:
+		break;
 
 	case WM_MOUSEMOVE:
 	{
