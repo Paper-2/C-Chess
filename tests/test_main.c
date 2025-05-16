@@ -41,7 +41,5 @@ int main() {
     test_are_allies_false();
     test_are_allies_true();
     test_piece_to_string();
-
-
     return 0;
 }
