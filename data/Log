@@ -1,5 +1,5 @@
 Date started: 4/27/2025
-Last updated: 05/12/2025
+Last updated: 05/16/2025
 
 Day 0 -- 2025-04-27
     - 12:39:53 The logging system was created.
@@ -107,3 +107,16 @@ Day 15 -- 2025-05-12
 	- 02:51:45 I may also change the current way the folder is
 	- 02:51:57 but for now I eep
 	- 02:52:00 i think
+
+Days 15 to 18 -- 2025-05-15 20:09:38.434845
+	- 20:09:38 Nothing was logged.
+
+Day 19 -- 2025-05-16
+	- 20:09:38 After many days of research, trial and failures I have achieved a structure that is immaculate
+	- 20:10:11 testing, compiling and whatever the hell cmake have been mastered (lie)
+	- 20:10:51 third of month working on this project is insane
+	- 20:11:24 Now I have to make a todo list of the next features that I need to add 
+	- 20:11:39 as well as a bugs to fix
+	- 20:12:14 oh and btw, I once again won the intrusive thoughts to learn vs 2022
+	- 20:12:51 It's complete garbage (yorp)
+	- 20:13:59 #TODO: get rid of depending on relative paths

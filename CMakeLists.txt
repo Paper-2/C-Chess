@@ -34,7 +34,7 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(C-Chess VERSION 1.0 LANGUAGES C)
+project(C-ChessLib VERSION 1.0 LANGUAGES C)
 add_subdirectory(lib)
 
 
@@ -42,13 +42,18 @@ file(GLOB_RECURSE SOURCES
     "${PROJECT_SOURCE_DIR}/src/*.c"
 )
 
-add_library(C-Chess STATIC ${SOURCES})
+add_library(C-ChessLib STATIC ${SOURCES})
 
-set_property(TARGET C-Chess PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+add_executable(chess "${PROJECT_SOURCE_DIR}/src/main.c")
 
-target_link_libraries(C-Chess PUBLIC zlib)
+target_link_libraries(chess PRIVATE C-ChessLib)
+target_include_directories(chess PRIVATE "${CMAKE_SOURCE_DIR}/include")
+set_target_properties(chess PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "C:\\Users\\holac\\source\\repos\\C-Chess")
 
-target_include_directories(C-Chess PUBLIC
+
+target_link_libraries(C-ChessLib PUBLIC zlib)
+
+target_include_directories(C-ChessLib PUBLIC
                     "${PROJECT_BINARY_DIR}"
                     "${PROJECT_SOURCE_DIR}/include"
 )

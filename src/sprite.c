@@ -180,8 +180,14 @@ Sprite *loadSprite(char const path[])
         printf("Failed to allocate memory for Sprite\n");
         return NULL;
     }
+    if (fopen) printf("fopen is indeed defined \n");
 
     filePtr = fopen(path, "rb");
+    if (filePtr == NULL) {
+        perror(path);
+        perror("FILE DOES NOT EXIST \n ");
+        
+    }
 
     fread(signature, sizeof(signature), 1, filePtr);
 
