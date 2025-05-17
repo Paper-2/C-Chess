@@ -1,9 +1,10 @@
-#include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <zlib.h>
 #include <string.h>
 #include "sprite.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 
 #define IHDR 0x49484452 // present in every PNG file after the signature
 #define IEND 0x49454E44 // Always the last chunk
@@ -23,6 +24,25 @@
 #define pHYs 0x70485973
 #define sPLT 0x73504C54
 #define tIME 0x74494D45
+
+
+#include <stdlib.h>
+#include <stdio.h>
+
+#ifndef free
+void free(void* ptr) {
+    (void) ptr;
+    printf("free isn't defined \n");
+}
+#endif
+#ifndef fclose
+int fclose(FILE *_File) {
+    (void) _File;
+    printf("fclose isn't defined \n");
+    return 0;
+}
+#endif
+
 
 /*
 The first 8 bytes of a PNG file always start with:

@@ -8,3 +8,5 @@ CppProperties.json
 data/JohnPablok Cburnett Chess set
 data/assets
 src/assets
+build
+lib/zlib

@@ -1,0 +1,35 @@
+# CMakeLists.txt for the tests subdirectory
+include(FetchContent)
+
+FetchContent_Declare(
+    cunit
+    GIT_REPOSITORY https://github.com/CUnit/CUnit.git
+    GIT_TAG        master
+)
+
+FetchContent_MakeAvailable(cunit)
+
+
+
+
+# Add all test source files here
+enable_testing()
+
+file(GLOB TEST_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+)
+
+# Automatically set TEST_EXECUTABLES to the names of the .c files (without extension)
+set(TEST_EXECUTABLES)
+foreach(test_src ${TEST_SOURCES})
+    get_filename_component(test_name ${test_src} NAME_WE)
+    list(APPEND TEST_EXECUTABLES ${test_name})
+    message(STATUS "Found test source: ${test_src}, test name: ${test_name}")
+
+    add_executable(${test_name} ${test_src})
+    target_include_directories(${test_name} PRIVATE "${CMAKE_SOURCE_DIR}/include")
+    target_link_libraries(${test_name} PRIVATE C-Chess)
+    target_link_libraries(${test_name} PRIVATE zlib)
+    target_link_libraries(${test_name} PRIVATE Cunit)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endforeach()
