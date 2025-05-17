@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include "board.h"
 #include "sprite.h"
 #include "utility.h"
@@ -70,13 +70,13 @@ struct
 	int possibleMoves[64][2];
 	int moveQuantity;
 	bool isCurrent; // whether or not the list of possible moves for the selected piece needs to be updated
-} SelectedPieceInfo = {NULL, 0, 0};
+} SelectedPieceInfo = {NULL, 0, 0, {{0, 0}}};
 
 int xOffSet = 20;
 int yOffSet = 30;
 int squareSize = 60;
 
-LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WPARAM wParam, LPARAM lParam);
 
 void generateMoves();
 
@@ -85,19 +85,26 @@ void generateMoves();
 void loadSprites()
 {
 
-	blackPieces[0] = loadSprite("./assets/black/b_king.png");
-	blackPieces[1] = loadSprite("./assets/black/b_queen.png");
-	blackPieces[2] = loadSprite("./assets/black/b_rook.png");
-	blackPieces[3] = loadSprite("./assets/black/b_bishop.png");
-	blackPieces[4] = loadSprite("./assets/black/b_knight.png");
-	blackPieces[5] = loadSprite("./assets/black/b_pawn.png");
+	char cwd[MAX_PATH];
+	if (GetCurrentDirectoryA(MAX_PATH, cwd)) {
+		printf("Current working directory: %s\n", cwd);
+	} else {
+		PRINT_ERROR("Failed to get current working directory.\n");
+	}
 
-	whitePieces[0] = loadSprite("./assets/white/w_king.png");
-	whitePieces[1] = loadSprite("./assets/white/w_queen.png");
-	whitePieces[2] = loadSprite("./assets/white/w_rook.png");
-	whitePieces[3] = loadSprite("./assets/white/w_bishop.png");
-	whitePieces[4] = loadSprite("./assets/white/w_knight.png");
-	whitePieces[5] = loadSprite("./assets/white/w_pawn.png");
+	blackPieces[0] = loadSprite("./data/assets/black/b_king.png");
+	blackPieces[1] = loadSprite("./data/assets/black/b_queen.png");
+	blackPieces[2] = loadSprite("./data/assets/black/b_rook.png");
+	blackPieces[3] = loadSprite("./data/assets/black/b_bishop.png");
+	blackPieces[4] = loadSprite("./data/assets/black/b_knight.png");
+	blackPieces[5] = loadSprite("./data/assets/black/b_pawn.png");
+
+	whitePieces[0] = loadSprite("./data/assets/white/w_king.png");
+	whitePieces[1] = loadSprite("./data/assets/white/w_queen.png");
+	whitePieces[2] = loadSprite("./data/assets/white/w_rook.png");
+	whitePieces[3] = loadSprite("./data/assets/white/w_bishop.png");
+	whitePieces[4] = loadSprite("./data/assets/white/w_knight.png");
+	whitePieces[5] = loadSprite("./data/assets/white/w_pawn.png");
 
 	/*	FIXME: the sprites use the RGBA pixel format yet the window uses ARGB this should not break the sprite, yet it does...
 			Not applying RGBAToARGB is fine, the pixels would just use the alpha value of the previous as rgbARGBa
@@ -307,10 +314,10 @@ void drawBoard(Board *board)
 			if (SelectedPieceInfo.isCurrent)
 			{
 				int x, y;
-				for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
+				for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
 				{
-					x = SelectedPieceInfo.possibleMoves[i][1];
-					y = 7 - SelectedPieceInfo.possibleMoves[i][0];
+					x = SelectedPieceInfo.possibleMoves[moveIndex][1];
+					y = 7 - SelectedPieceInfo.possibleMoves[moveIndex][0];
 
 					int hintX = ((x)*squareSize) + xOffSet + squareSize / 2;
 					int hintY = ((y)*squareSize) + yOffSet + squareSize / 2;
@@ -323,6 +330,10 @@ void drawBoard(Board *board)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
+
+	(void)hPrevInstance;
+	(void)pCmdLine;
+	(void)nCmdShow;
 
 	// boiler plate
 	const wchar_t window_class_name[] = L"Window Class";
@@ -353,7 +364,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
 
 	Board *board; // allocate memory for the Board object
-	board = (Board *)malloc(sizeof(Board));
+	board = (Board *) malloc(sizeof(Board));
 	gameBoard = board;
 	board->grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
@@ -396,9 +407,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 Piece *prevSelected;
 Piece *nextPiece = NULL;
 
-LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static bool has_focus = true;
 
 	/*This is where the events are handled, I suppose this where the logic of some of the game will be handle*/
 	switch (message)
@@ -414,9 +424,9 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 	{
 		static PAINTSTRUCT paint;
 		static HDC device_context;
-		device_context = BeginPaint(window_handle, &paint);
+		device_context = BeginPaint(local_window_handle, &paint);
 		BitBlt(device_context, paint.rcPaint.left, paint.rcPaint.top, paint.rcPaint.right - paint.rcPaint.left, paint.rcPaint.bottom - paint.rcPaint.top, bitmap_device_context, paint.rcPaint.left, paint.rcPaint.top, SRCCOPY);
-		EndPaint(window_handle, &paint);
+		EndPaint(local_window_handle, &paint);
 	}
 	break;
 
@@ -433,14 +443,12 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 
 	case WM_KILLFOCUS:
 	{
-		has_focus = false;
 		memset(keyboard, 0, 256 * sizeof(keyboard[0]));
 		mouse.buttons = 0;
 	}
 	break;
 
 	case WM_SETFOCUS:
-		has_focus = true;
 		break;
 
 	case WM_MOUSEMOVE:
@@ -487,9 +495,9 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 			int dst[2] = {7 - yCord, xCord};
 
 			bool isMovePossible = false;
-			for (int i = 0; i < SelectedPieceInfo.moveQuantity; i++)
+			for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
 			{
-				if (SelectedPieceInfo.possibleMoves[i][0] == dst[0] && SelectedPieceInfo.possibleMoves[i][1] == dst[1])
+				if (SelectedPieceInfo.possibleMoves[moveIndex][0] == dst[0] && SelectedPieceInfo.possibleMoves[moveIndex][1] == dst[1])
 				{
 					movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
 					isMovePossible = true;
@@ -563,7 +571,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 		break;
 
 	default:
-		return DefWindowProc(window_handle, message, wParam, lParam);
+		return DefWindowProc(local_window_handle, message, wParam, lParam);
 	}
 	return 0;
 }
