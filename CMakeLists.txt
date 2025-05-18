@@ -48,7 +48,6 @@ add_executable(chess "${PROJECT_SOURCE_DIR}/src/main.c")
 
 target_link_libraries(chess PRIVATE C-ChessLib)
 target_include_directories(chess PRIVATE "${CMAKE_SOURCE_DIR}/include")
-set_target_properties(chess PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "C:\\Users\\holac\\source\\repos\\C-Chess")
 
 
 target_link_libraries(C-ChessLib PUBLIC zlib)

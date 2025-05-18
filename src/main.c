@@ -86,9 +86,12 @@ void loadSprites()
 {
 
 	char cwd[MAX_PATH];
-	if (GetCurrentDirectoryA(MAX_PATH, cwd)) {
+	if (GetCurrentDirectoryA(MAX_PATH, cwd))
+	{
 		printf("Current working directory: %s\n", cwd);
-	} else {
+	}
+	else
+	{
 		PRINT_ERROR("Failed to get current working directory.\n");
 	}
 
@@ -311,7 +314,7 @@ void drawBoard(Board *board)
 			}
 			// drawSprite(frame.pixels, xCord, yCord, board);
 
-			if (SelectedPieceInfo.isCurrent)
+			if (true) // if (SelectedPieceInfo.isCurrent)
 			{
 				int x, y;
 				for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
@@ -364,7 +367,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
 
 	Board *board; // allocate memory for the Board object
-	board = (Board *) malloc(sizeof(Board));
+	board = (Board *)malloc(sizeof(Board));
 	gameBoard = board;
 	board->grid = malloc(8 * sizeof(Piece *)); // allocates memory for the grid
 
@@ -401,7 +404,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
 	return 0;
 }
-
 
 // global vars for the controller i think...
 Piece *prevSelected;
@@ -460,7 +462,6 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 
 	case WM_LBUTTONDOWN:
 		mouse.buttons |= MOUSE_LEFT;
-
 
 		int xCord = (mouse.x - xOffSet) / squareSize;
 		int yCord = (mouse.y - yOffSet) / squareSize;
@@ -581,25 +582,296 @@ void generateMoves()
 	if (SelectedPieceInfo.selectedPiece && !SelectedPieceInfo.isCurrent)
 	{
 
+		int xAxis[] = {0, 1, 2, 3, 4, 5, 6, 7};
+		int str[] = {0, 1, 2, 3, 4, 5, 6, 7};
+		int rev[] = {7, 6, 5, 4, 3, 2, 1, 0};
+		int yAxis[] = {0, 1, 2, 3, 4, 5, 6, 7};
+		int limit = 8;
+		int x = 0;
+		int y = 0;
+		int isValidState;
+
+		for (int i = 0; i < 8; i++)
+		{
+			xAxis[i] = xAxis[i] - xAxis[SelectedPieceInfo.x];
+			yAxis[i] = xAxis[i] - xAxis[SelectedPieceInfo.y];
+		}
+
 		int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
 		int dst[2] = {0, 0};
 		int counter = 0;
-		for (int y = 0; y < 8; y++)
+
+		switch (getClass(SelectedPieceInfo.selectedPiece))
 		{
-			for (int x = 0; x < 8; x++)
+
+		case (KING):
+			limit = 8;
+		case (QUEEN):
+		case (ROOK):
+			// checks above.
+			for (int i = 1; i < limit; i++)
 			{
+				y = SelectedPieceInfo.y + i;
+				dst[0] = 7 - y;
+				dst[1] = SelectedPieceInfo.x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+			y = 0;
+			x = 0;
+
+			// checks down.
+			for (int i = 1; i < limit; i++)
+			{
+				y = SelectedPieceInfo.y - i;
+				dst[0] = 7 - y;
+				dst[1] = SelectedPieceInfo.x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+			y = 0;
+			x = 0;
+
+			// checks right.
+			for (int i = 1; i < limit; i++)
+			{
+				x = SelectedPieceInfo.x + i;
+				dst[0] = 7 - SelectedPieceInfo.y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// checks left.
+			for (int i = 1; i < limit; i++)
+			{
+				x = SelectedPieceInfo.x - i;
+				dst[0] = 7 - SelectedPieceInfo.y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			y = 0;
+			x = 0;
+			// stops the a rook from checking its diagonals (not really necessary since those checks would fail)
+			if (getClass(SelectedPieceInfo.selectedPiece) == ROOK)
+				break;
+		case (BISHOP):
+			// checks NW.
+			for (int i = 1; i < limit; i++)
+			{
+				y = SelectedPieceInfo.y + i;
+				x = SelectedPieceInfo.x - i;
 				dst[0] = 7 - y;
 				dst[1] = x;
-
-				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
 				{
-					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
 
+			y = 0;
+			x = 0;
+
+			// checks NE.
+			for (int i = 1; i < limit; i++)
+			{
+				y = SelectedPieceInfo.y + i;
+				x = SelectedPieceInfo.x + i;
+				dst[0] = 7 - y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			y = 0;
+			x = 0;
+
+			// checks SE.
+			for (int i = 1; i < limit; i++)
+			{
+				y = SelectedPieceInfo.y - i;
+				x = SelectedPieceInfo.x + i;
+				dst[0] = 7 - y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+			y = 0;
+			x = 0;
+
+			// checks SW.
+			for (int i = 1; i < limit; i++)
+			{
+				y = SelectedPieceInfo.y - i;
+				x = SelectedPieceInfo.x - i;
+				dst[0] = 7 - y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+					if (isValidState == CAPTURE)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			break;
+		case (PAWN):
+			int theReverslerr = getColor(SelectedPieceInfo.selectedPiece) ? -1 : 1;
+			// Single forward move
+			y = SelectedPieceInfo.y + theReverslerr;
+			x = SelectedPieceInfo.x;
+			dst[0] = 7 - y;
+			dst[1] = x;
+			isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+			bool canMoveOne = false;
+			if (isValidState == 1)
+			{ // 1 means valid move, not capture
+				SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+				SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+				counter++;
+				canMoveOne = true;
+			}
+
+			// Double forward move (only if single forward is possible and pawn is on starting rank)
+			int startRank = getColor(SelectedPieceInfo.selectedPiece) ? 6 : 1;
+			if (SelectedPieceInfo.y == startRank && canMoveOne)
+			{
+				y = SelectedPieceInfo.y + 2 * theReverslerr;
+				x = SelectedPieceInfo.x;
+				dst[0] = 7 - y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState == 1)
+				{
 					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
 					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
 					counter++;
 				}
 			}
+
+			// Captures (diagonal moves)
+			for (int dx = -1; dx <= 1; dx += 2)
+			{
+				y = SelectedPieceInfo.y + theReverslerr;
+				x = SelectedPieceInfo.x + dx;
+				dst[0] = 7 - y;
+				dst[1] = x;
+				isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState == 2)
+				{ // 2 means capture
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+				}
+			}
+
+			SelectedPieceInfo.moveQuantity = counter;
+			SelectedPieceInfo.isCurrent = true;
+
+			break;
+		case (KNIGHT):
+		{
+			// All possible knight moves (dx, dy)
+			int knightMoves[8][2] = {
+				{1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
+			for (int i = 0; i < 8; i++)
+			{
+				int x = SelectedPieceInfo.x + knightMoves[i][0];
+				int y = SelectedPieceInfo.y + knightMoves[i][1];
+				int dst[2] = {7 - y, x};
+				int isValidState = isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst);
+				if (isValidState)
+				{
+					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+					counter++;
+				}
+			}
+		}
 		}
 
 		SelectedPieceInfo.moveQuantity = counter;

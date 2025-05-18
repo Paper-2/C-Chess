@@ -40,6 +40,11 @@ void printBoard(Board *);
 void movePiece(Board *, Piece *, int[2]); // moves a piece from one position to another. sets the destination cell to the piece and the source cell to an empty cell.
 void setBoard(Board *, Piece[8][8]);	  // sets the board based on the fen string
 
+
+#define NOT_VALID 0
+#define VALID 1
+#define CAPTURE 2
+
 int isValidMove(Board *, Piece *, int[2], int[2]); // checks if the move is valid (for all pieces types)
 
 
