@@ -44,12 +44,18 @@ file(GLOB_RECURSE SOURCES
 
 add_library(C-ChessLib STATIC ${SOURCES})
 
-add_executable(chess "${PROJECT_SOURCE_DIR}/src/main.c")
+add_executable(chess WIN32 "${PROJECT_SOURCE_DIR}/src/main.c")
 
 target_link_libraries(chess PRIVATE C-ChessLib)
 target_include_directories(chess PRIVATE "${CMAKE_SOURCE_DIR}/include")
-set_target_properties(chess PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "C:\\Users\\holac\\source\\repos\\C-Chess")
 
+# Copy assets to build directory so they're found relative to executable
+add_custom_command(TARGET chess POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${PROJECT_SOURCE_DIR}/data"
+    "$<TARGET_FILE_DIR:chess>/data"
+    COMMENT "Copying assets to build directory"
+)
 
 target_link_libraries(C-ChessLib PUBLIC zlib)
 

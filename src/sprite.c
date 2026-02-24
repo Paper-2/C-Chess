@@ -26,22 +26,7 @@
 #define tIME 0x74494D45
 
 
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifndef free
-void free(void* ptr) {
-    (void) ptr;
-    printf("free isn't defined \n");
-}
-#endif
-#ifndef fclose
-int fclose(FILE *_File) {
-    (void) _File;
-    printf("fclose isn't defined \n");
-    return 0;
-}
-#endif
+/* stdlib.h and stdio.h already included above */
 
 
 /*
@@ -177,16 +162,15 @@ Sprite *loadSprite(char const path[])
     Sprite *spritePtr = (Sprite *)malloc(sizeof(Sprite));
     if (!spritePtr)
     {
-        printf("Failed to allocate memory for Sprite\n");
+        fprintf(stderr, "Failed to allocate memory for Sprite\n");
         return NULL;
     }
-    if (fopen) printf("fopen is indeed defined \n");
 
     filePtr = fopen(path, "rb");
     if (filePtr == NULL) {
-        perror(path);
-        perror("FILE DOES NOT EXIST \n ");
-        
+        fprintf(stderr, "FILE DOES NOT EXIST: %s\n", path);
+        free(spritePtr);
+        return NULL;
     }
 
     fread(signature, sizeof(signature), 1, filePtr);
@@ -194,12 +178,10 @@ Sprite *loadSprite(char const path[])
     // Signature check
     if (signature[1] != 'P' || signature[2] != 'N' || signature[3] != 'G')
     {
-        printf("only PNGs have been implemented\n");
-        for (int i = 0; i < 8; i++) {
-            printf("%02X ", signature[i]);
-        }
-        printf("\n");
-        return 0;
+        fprintf(stderr, "only PNGs have been implemented\n");
+        fclose(filePtr);
+        free(spritePtr);
+        return NULL;
     }
     int decodingFile = 1;
 
@@ -251,7 +233,6 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
     int typeValue;
 
     /*DATA COLLECTION*/
-
     fread(buffer, sizeof(buffer), 1, filePtr);
     dataLength = __builtin_bswap32(*(int32_t *)buffer);
     data = (unsigned char *)malloc(sizeof(unsigned char) * dataLength);
@@ -260,6 +241,7 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
     
     if (chunkType[0] & 0b100000) // if the 5th bit of the type is 1 we can safely skip the chunk. See ancillary chunks
     {
+        free(data);  // Fix memory leak
         fseek(filePtr, dataLength + 4, SEEK_CUR);
         return 1;
     }
@@ -275,54 +257,35 @@ int readChunk(FILE *filePtr, Sprite *spritePtr)
     case IHDR:
         spritePtr->width = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
         spritePtr->height = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
-        spritePtr->pixels = (uint32_t *)malloc(sizeof(uint16_t) * (spritePtr->h * spritePtr->w)); // allocates the space for the image
+        spritePtr->pixels = (uint32_t *)malloc(sizeof(uint32_t) * (spritePtr->h * spritePtr->w)); // allocates the space for the image
         break;
 
     case IDAT:
-
-        /*
-        1. Begin with image scanlines represented as described in Image layout; the layout and total size of this
-        raw data are determined by the fields of IHDR. Done ✔️
-
-
-
-        Filter the image data according to the filtering method specified by the IHDR chunk.
-        (Note that with filter method 0, the only one currently defined, this implies prepending a filter-type byte to each scanline.)*/
-
-        /*
-        Compress the filtered data using the compression method specified by the IHDR chunk.
-
-        To read the image data, reverse this process. (wtf)
-        */
+        {
         uLongf decompressedSize = spritePtr->h * spritePtr->w * sizeof(uint32_t) * 2; // Allocate twice the expected size for safety
         unsigned char *decompressedData = (unsigned char *)malloc(decompressedSize);
         if (!decompressedData)
         {
-            printf("Failed to allocate memory for decompressed data\n");
+            fprintf(stderr, "Failed to allocate memory for decompressed data\n");
             free(data);
             return 0;
         }
 
         // decompress data
-        // TODO: make my own uncompress function
         int status = uncompress(decompressedData, &decompressedSize, data, dataLength);
 
         if (status != Z_OK)
         {
-            printf("Failed to decompress IDAT chunk\n");
-            if (decompressedData) {
-                free(decompressedData);
-                decompressedData = NULL;
-            }
+            fprintf(stderr, "Failed to decompress IDAT chunk\n");
+            free(decompressedData);
             free(data);
             return 0;
         }
         // image reconstruction
         processScanlines(decompressedData, spritePtr->w, spritePtr->h, sizeof(uint32_t), spritePtr->pixels);
 
-
         free(decompressedData); 
-
+        }
         break;
 
     case IEND: // "IEND"

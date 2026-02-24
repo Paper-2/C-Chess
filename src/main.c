@@ -8,6 +8,7 @@
 #include "board.h"
 #include "sprite.h"
 #include "utility.h"
+#include "paths.h"
 
 #define PRINT_ERROR(a, args...) printf("ERROR %s() %s Line %d: " a, __FUNCTION__, __FILE__, __LINE__, ##args);
 
@@ -80,31 +81,32 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 
 void generateMoves();
 
-// This function is responsible of loading the sprites the global variables [color]Pieces
-// The directory should be set to C-Chess/src when running the program or else the path to the sprites will be invalid
+// Load sprites using paths relative to executable location
 void loadSprites()
 {
-
-	char cwd[MAX_PATH];
-	if (GetCurrentDirectoryA(MAX_PATH, cwd)) {
-		printf("Current working directory: %s\n", cwd);
-	} else {
-		PRINT_ERROR("Failed to get current working directory.\n");
+	char path[MAX_PATH];
+	
+	// Initialize path resolution based on executable location
+	if (paths_init() != 0) {
+		PRINT_ERROR("Failed to initialize paths\n");
+		return;
 	}
 
-	blackPieces[0] = loadSprite("./data/assets/black/b_king.png");
-	blackPieces[1] = loadSprite("./data/assets/black/b_queen.png");
-	blackPieces[2] = loadSprite("./data/assets/black/b_rook.png");
-	blackPieces[3] = loadSprite("./data/assets/black/b_bishop.png");
-	blackPieces[4] = loadSprite("./data/assets/black/b_knight.png");
-	blackPieces[5] = loadSprite("./data/assets/black/b_pawn.png");
+	// Load black pieces
+	blackPieces[0] = loadSprite(paths_get_asset("black/b_king.png", path, sizeof(path)));
+	blackPieces[1] = loadSprite(paths_get_asset("black/b_queen.png", path, sizeof(path)));
+	blackPieces[2] = loadSprite(paths_get_asset("black/b_rook.png", path, sizeof(path)));
+	blackPieces[3] = loadSprite(paths_get_asset("black/b_bishop.png", path, sizeof(path)));
+	blackPieces[4] = loadSprite(paths_get_asset("black/b_knight.png", path, sizeof(path)));
+	blackPieces[5] = loadSprite(paths_get_asset("black/b_pawn.png", path, sizeof(path)));
 
-	whitePieces[0] = loadSprite("./data/assets/white/w_king.png");
-	whitePieces[1] = loadSprite("./data/assets/white/w_queen.png");
-	whitePieces[2] = loadSprite("./data/assets/white/w_rook.png");
-	whitePieces[3] = loadSprite("./data/assets/white/w_bishop.png");
-	whitePieces[4] = loadSprite("./data/assets/white/w_knight.png");
-	whitePieces[5] = loadSprite("./data/assets/white/w_pawn.png");
+	// Load white pieces
+	whitePieces[0] = loadSprite(paths_get_asset("white/w_king.png", path, sizeof(path)));
+	whitePieces[1] = loadSprite(paths_get_asset("white/w_queen.png", path, sizeof(path)));
+	whitePieces[2] = loadSprite(paths_get_asset("white/w_rook.png", path, sizeof(path)));
+	whitePieces[3] = loadSprite(paths_get_asset("white/w_bishop.png", path, sizeof(path)));
+	whitePieces[4] = loadSprite(paths_get_asset("white/w_knight.png", path, sizeof(path)));
+	whitePieces[5] = loadSprite(paths_get_asset("white/w_pawn.png", path, sizeof(path)));
 
 	/*	FIXME: the sprites use the RGBA pixel format yet the window uses ARGB this should not break the sprite, yet it does...
 			Not applying RGBAToARGB is fine, the pixels would just use the alpha value of the previous as rgbARGBa
@@ -184,6 +186,7 @@ void drawCircle(uint32_t *pixels, int x, int y, int r, int color)
 
 void drawPiece(uint32_t *pixels, int x, int y, Sprite *piece)
 {
+	if (!piece || !piece->pixels) return; // NULL check
 	for (int i = 0; i < piece->height; i++)
 	{
 		int destY = y + (piece->height - 1 - i); // Flip vertically
@@ -307,7 +310,9 @@ void drawBoard(Board *board)
 			if (curPiece != EMPTY_CELL)
 			{ // if the square isn't empty don't attempt to draw it.
 				pieceToBeDrawn = pieceArr[getClass(&curPiece)];
-				drawPiece(frame.pixels, xCord + 5, yCord + 5, pieceToBeDrawn);
+				if (pieceToBeDrawn) {
+					drawPiece(frame.pixels, xCord + 5, yCord + 5, pieceToBeDrawn);
+				}
 			}
 			// drawSprite(frame.pixels, xCord, yCord, board);
 
@@ -330,7 +335,6 @@ void drawBoard(Board *board)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
-
 	(void)hPrevInstance;
 	(void)pCmdLine;
 	(void)nCmdShow;
@@ -383,6 +387,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 		while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
 		{
 			DispatchMessage(&message);
+		}
+
+		if (!frame.pixels) {
+			continue; // Wait for WM_SIZE to initialize the frame
 		}
 
 		drawSquare(frame.pixels, 0, 0, frame.width, frame.height, 0xFFFFFFFF); // draws the white background, should run once i guess...
