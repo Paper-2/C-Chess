@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <wchar.h>
 #include "board.h"
 #include "sprite.h"
 #include "utility.h"
@@ -20,8 +21,8 @@
 
 #define MIN_SIZE_FACTOR 40
 #define SIZE_SCALE 1.6
-#define WINHeight 9 * (SIZE_SCALE * MIN_SIZE_FACTOR)
-#define WINWidth 16 * (SIZE_SCALE * MIN_SIZE_FACTOR)
+#define WINHeight 10 * (SIZE_SCALE * MIN_SIZE_FACTOR) + 50  // Extra space for UI
+#define WINWidth 16 * (SIZE_SCALE * MIN_SIZE_FACTOR) + 100  // Extra space for captured pieces panel
 
 bool quit = false;
 HWND window_handle;
@@ -64,6 +65,13 @@ Sprite *blackPieces[6] = {0};
 Sprite *whitePieces[6] = {0};
 Board *gameBoard;
 
+// Game state
+int currentTurn = 0; // 0 = White, 1 = Black
+int capturedWhite[6] = {0}; // Count of captured white pieces [King, Queen, Rook, Bishop, Knight, Pawn]
+int capturedBlack[6] = {0}; // Count of captured black pieces
+int gameOver = 0; // 0 = playing, 1 = white wins, 2 = black wins, 3 = stalemate
+int inCheck = 0; // 0 = no check, 1 = white in check, 2 = black in check
+
 struct
 {
 	Piece *selectedPiece;
@@ -74,12 +82,19 @@ struct
 } SelectedPieceInfo = {NULL, 0, 0, {{0, 0}}};
 
 int xOffSet = 20;
-int yOffSet = 30;
+int yOffSet = 80; // Increased to make room for UI at top
 int squareSize = 60;
+
+// UI Layout constants
+int uiTopHeight = 70;
+int uiRightWidth = 200;
+HFONT hFontLarge = NULL;
+HFONT hFontSmall = NULL;
 
 LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WPARAM wParam, LPARAM lParam);
 
 void generateMoves();
+void drawUI(HDC hdc);  // Forward declaration
 
 // Load sprites using paths relative to executable location
 void loadSprites()
@@ -121,6 +136,129 @@ void loadSprites()
 			}
 	*/
 };
+
+// Initialize fonts for UI
+void initFonts()
+{
+	if (!hFontLarge) {
+		hFontLarge = CreateFont(24, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+			ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+			DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+	}
+	if (!hFontSmall) {
+		hFontSmall = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+			DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+	}
+}
+
+// Draw UI elements using GDI (called during WM_PAINT)
+void drawUI(HDC hdc)
+{
+	initFonts();
+	
+	// Set up drawing
+	SetBkMode(hdc, TRANSPARENT);
+	
+	// Draw turn indicator background
+	RECT turnRect = {10, 10, 250, 60};
+	HBRUSH turnBrush;
+	if (gameOver) {
+		turnBrush = CreateSolidBrush(RGB(100, 100, 100)); // Gray for game over
+	} else if (currentTurn == 0) {
+		turnBrush = CreateSolidBrush(RGB(240, 240, 240)); // Light for white's turn
+	} else {
+		turnBrush = CreateSolidBrush(RGB(60, 60, 60)); // Dark for black's turn
+	}
+	FillRect(hdc, &turnRect, turnBrush);
+	DeleteObject(turnBrush);
+	
+	// Draw border
+	HPEN borderPen = CreatePen(PS_SOLID, 2, RGB(80, 40, 40));
+	HPEN oldPen = (HPEN)SelectObject(hdc, borderPen);
+	HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+	Rectangle(hdc, turnRect.left, turnRect.top, turnRect.right, turnRect.bottom);
+	SelectObject(hdc, oldPen);
+	SelectObject(hdc, oldBrush);
+	DeleteObject(borderPen);
+	
+	// Draw turn text
+	SelectObject(hdc, hFontLarge);
+	wchar_t turnText[64];
+	if (gameOver == 1) {
+		wcscpy(turnText, L"White Wins!");
+		SetTextColor(hdc, RGB(0, 128, 0));
+	} else if (gameOver == 2) {
+		wcscpy(turnText, L"Black Wins!");
+		SetTextColor(hdc, RGB(0, 128, 0));
+	} else if (gameOver == 3) {
+		wcscpy(turnText, L"Stalemate!");
+		SetTextColor(hdc, RGB(128, 128, 0));
+	} else if (currentTurn == 0) {
+		wcscpy(turnText, L"White's Turn");
+		SetTextColor(hdc, RGB(40, 40, 40));
+	} else {
+		wcscpy(turnText, L"Black's Turn");
+		SetTextColor(hdc, RGB(255, 255, 255));
+	}
+	RECT textRect = {turnRect.left + 10, turnRect.top + 5, turnRect.right - 10, turnRect.bottom - 5};
+	DrawText(hdc, turnText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	
+	// Draw check indicator
+	if (inCheck && !gameOver) {
+		SelectObject(hdc, hFontSmall);
+		SetTextColor(hdc, RGB(200, 0, 0));
+		RECT checkRect = {turnRect.left + 10, turnRect.bottom - 20, turnRect.right - 10, turnRect.bottom - 2};
+		DrawText(hdc, L"CHECK!", -1, &checkRect, DT_CENTER | DT_SINGLELINE);
+	}
+	
+	// Draw captured pieces section
+	int capturedX = 8 * squareSize + xOffSet + 30;
+	int capturedY = yOffSet;
+	
+	// White captured pieces header
+	SelectObject(hdc, hFontSmall);
+	SetTextColor(hdc, RGB(40, 40, 40));
+	RECT whiteHeader = {capturedX, capturedY, capturedX + 150, capturedY + 20};
+	DrawText(hdc, L"Captured White:", -1, &whiteHeader, DT_LEFT | DT_SINGLELINE);
+	
+	// Draw captured white pieces counts
+	const wchar_t* pieceSymbols[] = {L"\x2654", L"\x2655", L"\x2656", L"\x2657", L"\x2658", L"\x2659"}; // Unicode chess symbols
+	const wchar_t* pieceNames[] = {L"K", L"Q", L"R", L"B", L"N", L"P"};
+	int py = capturedY + 25;
+	for (int i = 0; i < 6; i++) {
+		if (capturedWhite[i] > 0) {
+			wchar_t countText[16];
+			swprintf(countText, 16, L"%s x%d", pieceNames[i], capturedWhite[i]);
+			RECT pieceRect = {capturedX, py, capturedX + 100, py + 18};
+			DrawText(hdc, countText, -1, &pieceRect, DT_LEFT | DT_SINGLELINE);
+			py += 18;
+		}
+	}
+	
+	// Black captured pieces header
+	int blackCapturedY = capturedY + 150;
+	RECT blackHeader = {capturedX, blackCapturedY, capturedX + 150, blackCapturedY + 20};
+	DrawText(hdc, L"Captured Black:", -1, &blackHeader, DT_LEFT | DT_SINGLELINE);
+	
+	// Draw captured black pieces counts
+	py = blackCapturedY + 25;
+	for (int i = 0; i < 6; i++) {
+		if (capturedBlack[i] > 0) {
+			wchar_t countText[16];
+			swprintf(countText, 16, L"%s x%d", pieceNames[i], capturedBlack[i]);
+			RECT pieceRect = {capturedX, py, capturedX + 100, py + 18};
+			DrawText(hdc, countText, -1, &pieceRect, DT_LEFT | DT_SINGLELINE);
+			py += 18;
+		}
+	}
+	
+	// Draw instructions at bottom
+	SelectObject(hdc, hFontSmall);
+	SetTextColor(hdc, RGB(80, 80, 80));
+	RECT instrRect = {10, frame.height - 25, 400, frame.height - 5};
+	DrawText(hdc, L"Left-click: Select/Move | Right-click: Deselect", -1, &instrRect, DT_LEFT | DT_SINGLELINE);
+}
 
 void drawSquare(uint32_t *pixels, int x, int y, int width, int height, int color)
 {
@@ -285,14 +423,21 @@ void drawBoard(Board *board)
 		{
 			int xCord = (i * squareSize) + xOffSet;
 			int yCord = (j * squareSize) + yOffSet;
-			if ((i + j) % 2 != 0)
-			{
-				drawSquare(frame.pixels, xCord, yCord, squareSize, squareSize, light);
+			
+			// Check if this is the selected square
+			bool isSelected = (SelectedPieceInfo.selectedPiece != NULL && 
+							   SelectedPieceInfo.x == i && 
+							   SelectedPieceInfo.y == j);
+			
+			int squareColor;
+			if (isSelected) {
+				squareColor = 0xFF4a7c4a; // Green highlight for selected piece
+			} else if ((i + j) % 2 != 0) {
+				squareColor = light;
+			} else {
+				squareColor = dark;
 			}
-			else
-			{
-				drawSquare(frame.pixels, xCord, yCord, squareSize, squareSize, dark);
-			}
+			drawSquare(frame.pixels, xCord, yCord, squareSize, squareSize, squareColor);
 
 			curPiece = board->grid[7 - j][i];
 			switch (getColor(&curPiece))
@@ -342,10 +487,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 	// boiler plate
 	const wchar_t window_class_name[] = L"Window Class";
 	static WNDCLASS window_class = {0};
+	window_class.style = CS_OWNDC;  // Keep device context for better performance
 	window_class.lpfnWndProc = WindowProcessMessage;
 	window_class.hInstance = hInstance;
 	window_class.lpszClassName = window_class_name;
 	window_class.hCursor = LoadCursor(NULL, IDC_ARROW);
+	window_class.hbrBackground = NULL;  // No background brush to prevent flicker
 	RegisterClass(&window_class);
 
 	bitmap_info.bmiHeader.biSize = sizeof(bitmap_info.bmiHeader);
@@ -366,6 +513,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
 	// Loading data game stuff
 	loadSprites(); // loads the sprites to whitePieces and BlackPieces
+	
+	// Initialize game state
+	currentTurn = 0;  // White starts
+	turn = 0;         // Sync with board.h extern variable
+	gameOver = 0;
+	inCheck = 0;
+	
+	// Initialize castling and en passant tracking
+	enPassantCol = -1;
+	enPassantRow = -1;
+	wKingMoved = 0;
+	bKingMoved = 0;
+	wRookKMoved = 0;
+	wRookQMoved = 0;
+	bRookKMoved = 0;
+	bRookQMoved = 0;
+	wCastle = 3;
+	bCastle = 3;
+	
+	for (int i = 0; i < 6; i++) {
+		capturedWhite[i] = 0;
+		capturedBlack[i] = 0;
+	}
 
 	Board *board; // allocate memory for the Board object
 	board = (Board *) malloc(sizeof(Board));
@@ -398,6 +568,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
 		InvalidateRect(window_handle, NULL, FALSE);
 		UpdateWindow(window_handle); // this is what actually draws the pixels
+		
+		// Small sleep to reduce CPU usage and flickering
+		Sleep(16); // ~60 FPS cap
 	}
 
 	// Free allocated memory for board grid
@@ -428,12 +601,18 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 	}
 	break;
 
+	case WM_ERASEBKGND:
+		// Return 1 to indicate we handled background erasing (prevents flicker)
+		return 1;
+
 	case WM_PAINT:
 	{
 		static PAINTSTRUCT paint;
 		static HDC device_context;
 		device_context = BeginPaint(local_window_handle, &paint);
 		BitBlt(device_context, paint.rcPaint.left, paint.rcPaint.top, paint.rcPaint.right - paint.rcPaint.left, paint.rcPaint.bottom - paint.rcPaint.top, bitmap_device_context, paint.rcPaint.left, paint.rcPaint.top, SRCCOPY);
+		// Draw UI elements on top
+		drawUI(device_context);
 		EndPaint(local_window_handle, &paint);
 	}
 	break;
@@ -469,20 +648,29 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 	case WM_LBUTTONDOWN:
 		mouse.buttons |= MOUSE_LEFT;
 
+		// Ignore clicks if game is over
+		if (gameOver) break;
 
 		int xCord = (mouse.x - xOffSet) / squareSize;
 		int yCord = (mouse.y - yOffSet) / squareSize;
+
+		// Check if click is within board bounds
+		if (xCord < 0 || xCord > 7 || yCord < 0 || yCord > 7) break;
 
 		if (SelectedPieceInfo.selectedPiece)
 			prevSelected = SelectedPieceInfo.selectedPiece; // only update prev when if the nextPiece is not null
 		nextPiece = getPieceAt(gameBoard, xCord, yCord);
 
+		// Only allow selecting pieces of the current player's color
 		if (!SelectedPieceInfo.selectedPiece && *nextPiece != EMPTY_CELL)
 		{
-
-			SelectedPieceInfo.selectedPiece = nextPiece;
-			SelectedPieceInfo.x = xCord;
-			SelectedPieceInfo.y = yCord;
+			// Check if the piece belongs to the current player
+			int pieceColor = getColor(nextPiece);
+			if (pieceColor == currentTurn) {
+				SelectedPieceInfo.selectedPiece = nextPiece;
+				SelectedPieceInfo.x = xCord;
+				SelectedPieceInfo.y = yCord;
+			}
 		}
 		else if (areAllies(nextPiece, SelectedPieceInfo.selectedPiece) && (&nextPiece != &prevSelected) && (*nextPiece != EMPTY_CELL)) // if they are of the color but not the same piece.
 		{
@@ -501,13 +689,110 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 			generateMoves();
 
 			int dst[2] = {7 - yCord, xCord};
+			int src[2] = {7 - SelectedPieceInfo.y, SelectedPieceInfo.x};
 
 			bool isMovePossible = false;
 			for (int moveIndex = 0; moveIndex < SelectedPieceInfo.moveQuantity; moveIndex++)
 			{
 				if (SelectedPieceInfo.possibleMoves[moveIndex][0] == dst[0] && SelectedPieceInfo.possibleMoves[moveIndex][1] == dst[1])
 				{
-					movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
+					Piece *movingPiece = SelectedPieceInfo.selectedPiece;
+					int pieceClass = getClass(movingPiece);
+					int pieceColor = getColor(movingPiece);
+					
+					// Check for castling
+					int castlingSide = isCastlingMove(gameBoard, movingPiece, src, dst);
+					if (castlingSide > 0)
+					{
+						executeCastling(gameBoard, pieceColor, castlingSide);
+						enPassantCol = -1;
+						enPassantRow = -1;
+					}
+					// Check for en passant
+					else if (isEnPassantMove(gameBoard, movingPiece, src, dst))
+					{
+						// Track captured pawn
+						capturedBlack[PAWN]++;
+						if (pieceColor == 1) {
+							capturedWhite[PAWN]++;
+							capturedBlack[PAWN]--;
+						}
+						executeEnPassant(gameBoard, src, dst);
+						enPassantCol = -1;
+						enPassantRow = -1;
+					}
+					else
+					{
+						// Normal move - check if we're capturing a piece
+						Piece targetPiece = gameBoard->grid[dst[0]][dst[1]];
+						if (targetPiece != EMPTY_CELL) {
+							int capturedColor = getColor(&targetPiece);
+							int capturedClass = getClass(&targetPiece);
+							if (capturedColor == 0) {
+								capturedWhite[capturedClass]++;
+							} else {
+								capturedBlack[capturedClass]++;
+							}
+						}
+						
+						// Track en passant opportunity if pawn moves two squares
+						if (pieceClass == PAWN && abs(dst[0] - src[0]) == 2)
+						{
+							enPassantCol = dst[1];
+							enPassantRow = dst[0];
+						}
+						else
+						{
+							enPassantCol = -1;
+							enPassantRow = -1;
+						}
+						
+						// Update castling rights based on piece moved
+						if (pieceClass == KING)
+						{
+							if (pieceColor == 0) wKingMoved = 1;
+							else bKingMoved = 1;
+						}
+						else if (pieceClass == ROOK)
+						{
+							if (pieceColor == 0)
+							{
+								if (src[0] == 7 && src[1] == 0) wRookQMoved = 1;
+								if (src[0] == 7 && src[1] == 7) wRookKMoved = 1;
+							}
+							else
+							{
+								if (src[0] == 0 && src[1] == 0) bRookQMoved = 1;
+								if (src[0] == 0 && src[1] == 7) bRookKMoved = 1;
+							}
+						}
+						
+						movePiece(gameBoard, SelectedPieceInfo.selectedPiece, dst);
+					}
+					
+					// Switch turns
+					currentTurn = 1 - currentTurn;
+					
+					// Check for check, checkmate, or stalemate
+					if (isCheckmate(gameBoard, currentTurn))
+					{
+						gameOver = (currentTurn == 0) ? 2 : 1; // Opponent wins
+						inCheck = 0;
+					}
+					else if (isStalemate(gameBoard, currentTurn))
+					{
+						gameOver = 3; // Stalemate
+						inCheck = 0;
+					}
+					else if (isKingInCheck(gameBoard, currentTurn))
+					{
+						inCheck = currentTurn + 1; // 1 = white in check, 2 = black in check
+					}
+					else
+					{
+						inCheck = 0;
+					}
+					
 					isMovePossible = true;
 					SelectedPieceInfo.selectedPiece = NULL;
 					SelectedPieceInfo.x = -1;
@@ -541,11 +826,12 @@ LRESULT CALLBACK WindowProcessMessage(HWND local_window_handle, UINT message, WP
 	case WM_RBUTTONDOWN:
 		mouse.buttons |= MOUSE_RIGHT;
 
-		if (SelectedPieceInfo.selectedPiece)
-		{
-
-			SelectedPieceInfo.selectedPiece = NULL;
-		}
+		// Deselect current piece and clear all selection state
+		SelectedPieceInfo.selectedPiece = NULL;
+		SelectedPieceInfo.x = -1;
+		SelectedPieceInfo.y = -1;
+		SelectedPieceInfo.isCurrent = false;
+		SelectedPieceInfo.moveQuantity = 0;
 		break;
 	case WM_RBUTTONUP:
 		mouse.buttons &= ~MOUSE_RIGHT;
@@ -601,11 +887,13 @@ void generateMoves()
 
 				if (isValidMove(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
 				{
-					// printf("piece(%d, %d) %s, dest piece %s\n", src[0], src[1], pieceToString(*SelectedPieceInfo.selectedPiece), pieceToString(gameBoard->grid[dst[0]][dst[1]]));
-
-					SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
-					SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
-					counter++;
+					// Filter out moves that would leave king in check
+					if (!wouldBeInCheck(gameBoard, SelectedPieceInfo.selectedPiece, src, dst))
+					{
+						SelectedPieceInfo.possibleMoves[counter][0] = dst[0];
+						SelectedPieceInfo.possibleMoves[counter][1] = dst[1];
+						counter++;
+					}
 				}
 			}
 		}

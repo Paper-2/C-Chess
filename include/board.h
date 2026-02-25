@@ -42,12 +42,38 @@ void setBoard(Board *, Piece[8][8]);	  // sets the board based on the fen string
 
 int isValidMove(Board *, Piece *, int[2], int[2]); // checks if the move is valid (for all pieces types)
 
+// Check and checkmate detection
+int isKingInCheck(Board *board, int color);        // checks if the king of given color is in check
+int isCheckmate(Board *board, int color);          // checks if the king of given color is in checkmate
+int isStalemate(Board *board, int color);          // checks if the player is in stalemate
+int wouldBeInCheck(Board *board, Piece *piece, int src[2], int dest[2]); // checks if move would leave king in check
+
+// Special move detection
+int isCastlingMove(Board *board, Piece *piece, int src[2], int dest[2]); // returns 1 for kingside, 2 for queenside, 0 otherwise
+int isEnPassantMove(Board *board, Piece *piece, int src[2], int dest[2]); // checks if move is en passant capture
+
+// Execute special moves (call these after isValidMove succeeds)
+void executeCastling(Board *board, int color, int side); // side: 1=kingside, 2=queenside
+void executeEnPassant(Board *board, int src[2], int dest[2]); // removes the captured pawn
+
+// Find king position
+void findKing(Board *board, int color, int pos[2]); // finds king position for given color
 
 int isSpaceFree(Board *, int[2]); // checks if the space is empty
+
+// Castling flags: bit 0 = kingside, bit 1 = queenside
+// wCastle/bCastle: 3 = both available, 2 = queenside only, 1 = kingside only, 0 = none
 extern Piece initialBoardData[8][8];
 extern int turn;
-extern int enPassant;
-extern int wCastle;
-extern int bCastle;
+extern int enPassantCol;      // Column where en passant capture is possible (-1 if none)
+extern int enPassantRow;      // Row of the pawn that can be captured en passant
+extern int wCastle;           // White castling rights
+extern int bCastle;           // Black castling rights
+extern int wKingMoved;        // Track if white king has moved
+extern int bKingMoved;        // Track if black king has moved
+extern int wRookKMoved;       // Track if white kingside rook has moved
+extern int wRookQMoved;       // Track if white queenside rook has moved  
+extern int bRookKMoved;       // Track if black kingside rook has moved
+extern int bRookQMoved;       // Track if black queenside rook has moved
 
 #endif // !BOARD_H
